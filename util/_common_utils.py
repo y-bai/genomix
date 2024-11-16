@@ -2,7 +2,7 @@
 # -*-coding:utf-8 -*-
 """
 @File    :		_common_utils.py
-@Time    :   	2024/03/05 13:24:46
+@Time    :   	2024/11/15 16:03:54
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
 @License :   	(C)Copyright 2023-2024, Yong Bai
@@ -19,69 +19,61 @@
                 See the License for the specific language governing permissions and
                 limitations under the License.
 
-@Desc    :   	
+@Desc    :   	None
 
 """
 
+
+from collections import OrderedDict
 import os
 import json
-import torch
+from itertools import tee, filterfalse
 
-from transformers.utils import WEIGHTS_NAME, CONFIG_NAME
-from transformers.utils.hub import cached_file
 
-def verify_exist(f_name):
+def check_file_exist(f_name):
     if not os.path.exists(f_name):
         raise FileNotFoundError(f"{f_name} not found.")
 
 
-def read_json(json_fname):
+def check_dir_exist(dir_path, create=True):
+    if not os.path.exists(dir_path):
+        if create:
+            os.makedirs(dir_path)
+        else:
+            raise FileNotFoundError(f"{dir_path} not found.")
 
-    verify_exist(json_fname)
+
+def partition(condition, iterable_input):
+    """partition the input list into two lists based on the condition
+
+    >>> patition_list(lambda x: x % 2 == 0, [1, 2, 3, 4, 5])
+    ([2, 4], [1, 3, 5])
+
+    Parameters
+    ----------
+    condition : labmda function
+        the condition to partition the input list
+    iterable_input : can be list, tuple, set
+        iterable input data to be partitioned
     
-    with open(json_fname, "rt", encoding="utf-8") as f:
-        dt_conf = json.load(f)
+    Returns
+    -------
+    tuple
+        a tuple containing two lists partitioned based on the condition
+        
+    """
+    t1, t2 = tee(iterable_input)
+    return list(filter(condition, t1)), list(filterfalse(condition, t2))
+
+
+def read_json(f_name):
+    with open(f_name, "rt", encoding="utf-8") as f:
+        # return ordered dict
+        dt_conf = json.load(f, object_pairs_hook=OrderedDict)
     return dt_conf
 
-def model_size(model):
-    return sum(t.numel() for t in model.parameters())
 
-# adapted from from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
-def load_config_hf(
-        model_name_or_dict, 
-        file_name=None, 
-        local_files_only=True
-    ):
-    resolved_archive_file = cached_file(
-        model_name_or_dict, 
-        filename=file_name if file_name is not None else CONFIG_NAME, 
-        local_files_only=local_files_only, 
-        _raise_exceptions_for_missing_entries=False)
-
-    return read_json(resolved_archive_file)
-
-
-def load_state_dict_hf(
-        model_name_or_dict, 
-        file_name=None, 
-        local_files_only=True, 
-        device=None, dtype=None
-    ):
-    # If not fp32, then we don't want to load directly to the GPU
-    mapped_device = "cpu" if dtype not in [torch.float32, None] else device
-    resolved_archive_file = cached_file(
-        model_name_or_dict, 
-        filename=file_name if file_name is not None else WEIGHTS_NAME, 
-        local_files_only=local_files_only, 
-        _raise_exceptions_for_missing_entries=False)
-    state_dict = torch.load(resolved_archive_file, map_location=mapped_device)
-    # Convert dtype before moving to GPU to save memory
-    if dtype is not None:
-        state_dict = {k: v.to(dtype=dtype) for k, v in state_dict.items()}
-    state_dict = {k: v.to(device=device) for k, v in state_dict.items()}
-    return state_dict
-
-
-
-
-
+def write_json(f_name, data):
+    with open(f_name, "wt", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+    print(f"Save data to {f_name} done!")
