@@ -73,7 +73,20 @@ def read_json(f_name):
     return dt_conf
 
 
-def write_json(f_name, data):
+def write_json(f_name, data, indent=4):
     with open(f_name, "wt", encoding="utf-8") as f:
-        json.dump(data, f, indent=4)
-    print(f"Save data to {f_name} done!")
+        json.dump(data, f, indent=indent)
+
+
+def read_txt(f_name):
+    with open(f_name, "rt", encoding="utf-8") as f:
+        # retuen a list of lines, each line contains a '\n' at the end
+        data = f.readlines()
+    return data
+
+
+def write_txt(f_name, data):
+    with open(f_name, "wt", encoding="utf-8") as f:
+        # write a list of lines, each line contains a '\n' at the end
+        f.writelines(data)
+

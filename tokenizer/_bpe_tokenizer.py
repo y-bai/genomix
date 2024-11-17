@@ -44,7 +44,7 @@ from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer
 from transformers.utils import logging
 
 from ._base_tokenizer import BaseTokenizer
-from ..util import verify_exist 
+from ..utils import verify_exist 
 
 logger = logging.get_logger(__name__)
 
