@@ -5,6 +5,7 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 tokens/
+tmp/
 
 dstool/dataset/
 dstool/vocab_gen/
