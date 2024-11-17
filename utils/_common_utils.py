@@ -46,7 +46,7 @@ def check_dir_exist(dir_path, create=True):
 def partition(condition, iterable_input):
     """partition the input list into two lists based on the condition
 
-    >>> patition_list(lambda x: x % 2 == 0, [1, 2, 3, 4, 5])
+    >>> patition(lambda x: x % 2 == 0, [1, 2, 3, 4, 5])
     ([2, 4], [1, 3, 5])
 
     Parameters
