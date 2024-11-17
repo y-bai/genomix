@@ -40,7 +40,7 @@ from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer
 from transformers.utils import logging
 
 from ._base_tokenizer import BaseTokenizer
-from ..utils import verify_exist, read_json
+from ..utils import check_file_exist, read_json
 
 logger = logging.get_logger(__name__)
 
@@ -163,7 +163,7 @@ class BioSeqBaseUnigramTokenizer(BaseTokenizer):
             full path of the `unigram.json` file.
         """
 
-        verify_exist(vocab_filename)
+        check_file_exist(vocab_filename)
         vocab = read_json(vocab_filename)['vocab']
 
         unk_id = None
