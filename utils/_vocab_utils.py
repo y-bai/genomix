@@ -38,14 +38,6 @@ from ._common_utils import (
 )
 
 
-# system-wide constants
-TOKENIZER_MODELS = ["BPE", "UNIGRAM", "SPM"]
-# `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
-SPECIAL_TOKENS = ["<BOS>", "<UNK>", "<EOS>", "<MASK>"] 
-# initial alphabet (DNA sequence) for BPE tokneizer
-INITIAL_ALPHABETS = list("ACGTN")
-
-
 def _bpe_vocab_update(
     input_dir: str,
     output_dir: str,
@@ -100,9 +92,9 @@ def _bpe_vocab_update(
     merge_lines = read_txt(merge_file)
 
     output_fname = os.path.join(output_dir, merge_txt_fname)
-    write_txt(output_fname, merge_lines[:new_real_vocab_size])
+    write_txt(output_fname, merge_lines[:new_real_vocab_size + 1]) # the first line is the head such as #version: 0.2
 
-    print(f"Updated vocab file is saved to {output_dir} for BPE tokenizer.")
+    print(f"DONE. Updated vocab file is saved to {output_dir} for BPE tokenizer.")
     
 
 def _unigram_vocab_update(
@@ -169,7 +161,7 @@ def _unigram_vocab_update(
 
     output_fname = os.path.join(output_dir, vocab_json_fname)
     write_json(output_fname, vocab_json)
-    print(f"Updated vocab file is saved to {output_dir} for UNIGRAM tokenizer.")
+    print(f"DONE. Updated vocab file is saved to {output_dir} for UNIGRAM tokenizer.")
 
 
 def _spm_vocab_update(
@@ -256,7 +248,7 @@ def _spm_vocab_update(
     with open(output_fname, "wb") as f:
         f.write(new_spm_model_proto.SerializeToString())
     
-    print(f"Updated vocab file is saved to {output_dir} for SPM tokenizer.")
+    print(f"DONE. Updated vocab file is saved to {output_dir} for SPM tokenizer.")
 
 
 # Define the decorator
@@ -336,10 +328,11 @@ def update_vocab(
 
     check_dir_exist(input_dir, create=False)
     check_dir_exist(output_dir, create=True)
-    print(f"{['-'] * 5}Input directory: {input_dir}")
-    print(f"{['-'] * 5}Output directory: {output_dir}")
-    print(f"{['-'] * 5}Tokenizer model: {tokenizer_model}")
-    print(f"{['-'] * 5}Vocabulary file name: {vocab_fname}")
-    print(f"{['-'] * 5}New special tokens: {new_special_tokens}")
-    print(f"{['-'] * 5}New vocabulary size: {new_vocab_size}")
+    print(f"Input directory: {input_dir}")
+    print(f"Output directory: {output_dir}")
+    print(f"Tokenizer model: {tokenizer_model}")
+    print(f"Vocabulary file name: {vocab_fname}")
+    print(f"New special tokens: {new_special_tokens}")
+    print(f"New vocabulary size: {new_vocab_size}")
+    print(f"{'-' * 20}")
 
