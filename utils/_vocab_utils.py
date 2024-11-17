@@ -100,12 +100,15 @@ def _bpe_vocab_update(
 def _unigram_vocab_update(
     input_dir: str,
     output_dir: str,
-    vocab_fname: Union[List[str], Tuple[str, ...]]=["unigram.json"],
+    vocab_fname: Union[str, List[str], Tuple[str, ...]]=["unigram.json"],
     new_special_tokens: Optional[List[str]]=["<BOS>", "<UNK>", "<EOS>", "<MASK>"],
     new_vocab_size: int=5004,
     **kwargs
 ):
-    vocab_json_fname = vocab_fname[0]
+    if isinstance(vocab_fname, str):
+        vocab_json_fname = vocab_fname
+    else:
+        vocab_json_fname = vocab_fname[0]
     if not vocab_json_fname.endswith(".json"):
         raise ValueError(f"Invalid vocab_fname: {vocab_fname}. It should be [.json]")
     
