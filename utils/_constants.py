@@ -25,12 +25,22 @@
 
 from enum import Enum
 
-class TOKENIZER_MODELS(Enum):
+class ExtendedEnum(Enum):
+    @classmethod
+    def values(cls):
+        return list(map(lambda c: c.value, cls))
+
+class TOKENIZER_MODELS(ExtendedEnum):
     BPE = "BPE"
     UNIGRAM = "UNIGRAM"
     SPM = "SPM"
 
-# `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
-SPECIAL_TOKENS = ["<BOS>", "<UNK>", "<EOS>", "<MASK>"] 
+class SPECIAL_TOKENS(ExtendedEnum):
+    BOS = "<BOS>"
+    EOS = "<EOS>"
+    UNK = "<UNK>"
+    MASK = "<MASK>"
+    # `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
+
 # initial alphabet to be retained (e.g, DNA sequence) for BPE tokneizer
 INITIAL_ALPHABETS = list("ACGTN")
