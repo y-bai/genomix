@@ -35,6 +35,8 @@ from transformers.convert_slow_tokenizer import SpmConverter
 
 from ._sentencepiece_tokenizer import BioSeqSPMTokenizer
 
+from ..utils import check_file_exist
+
 logger = logging.get_logger(__name__)
 
 VOCAB_FILES_NAMES = {"vocab_file": "spm_vocab.model", "tokenizer_file": "tokenizer.json"}
@@ -152,6 +154,7 @@ class BioSeqSPMTokenizerFast(PreTrainedTokenizerFast):
             )
             tokenizer_object = BioSeqSPMConverter(slow_tokenizer).converted()
         else:
+
             tokenizer_object = None
         
         super().__init__(
