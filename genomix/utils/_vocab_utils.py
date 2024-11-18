@@ -36,6 +36,7 @@ from ._common_utils import (
     write_txt,
     partition
 )
+from ._constants import SPECIAL_TOKENS
 
 
 def _bpe_vocab_update(
@@ -175,6 +176,9 @@ def _spm_vocab_update(
     new_vocab_size: int=5004,
     **kwargs
 ):
+    if new_vocab_size > 0 and new_special_tokens is not None:
+        assert new_vocab_size > len(new_special_tokens), f"new_vocab_size should be greater than {len(new_special_tokens)} if it is not 0."
+    
     import sentencepiece as spm
     from sentencepiece import sentencepiece_model_pb2 as sp_pb2_model
 
@@ -203,53 +207,131 @@ def _spm_vocab_update(
     #     "nbest_size": -1,
     #     "alpha":0.16,
     # }
+
+    # see https://ddimri.medium.com/sentencepiece-the-nlp-architects-tool-for-building-bridges-between-languages-7a0b8ae53130
+    # https://blog.ceshine.net/post/trim-down-sentencepiece-vocabulary/
+    
     spm_model = spm.SentencePieceProcessor()
     spm_model.Load(vocab_model_file)
-    original_spm_model_proto = sp_pb2_model.ModelProto()
-    # new_spm_model_proto.ParseFromString(open(vocab_model_file, "rb").read())
-    original_spm_model_proto.ParseFromString(spm_model.serialized_model_proto())
+    # original_spm_model_proto = sp_pb2_model.ModelProto()
+    # # new_spm_model_proto.ParseFromString(open(vocab_model_file, "rb").read())
+    # original_spm_model_proto.ParseFromString(spm_model.serialized_model_proto())
+    # original_vocab = [spm_model.IdToPiece(i) for i in range(spm_model.GetPieceSize())]
+    # original_special_tokens, regular_tokens = partition(lambda x: x.startswith("<"), original_vocab)
 
-    # vocabulary expansion from pretrained model
-    # see https://ddimri.medium.com/sentencepiece-the-nlp-architects-tool-for-building-bridges-between-languages-7a0b8ae53130
+    original_vocab_size = spm_model.GetPieceSize()
+
     new_spm_model_proto = sp_pb2_model.ModelProto()
+    new_spm_model_proto.ParseFromString(open(vocab_model_file, "rb").read())
 
-    original_vocab = [spm_model.IdToPiece(i) for i in range(spm_model.GetPieceSize())]
-    # partition the original vocab file into special tokens and regular tokens
-    original_special_tokens, regular_tokens = partition(lambda x: x.startswith("<"), original_vocab)
-
-    new_special_tokens_in = new_special_tokens if new_special_tokens is not None else original_special_tokens
-
-    n_new_special_tokens_in = len(new_special_tokens_in)
-
-    if 0 < new_vocab_size <= n_new_special_tokens_in:
-        raise ValueError(f"new_vocab_size should be greater than {n_new_special_tokens_in} if it is not 0.")
+    n_new_vocab_size = original_vocab_size if new_vocab_size == 0 else new_vocab_size
+    n_remove_vocab_size = original_vocab_size - n_new_vocab_size
     
-    new_real_vocab_size = (len(original_vocab) 
-                            if new_vocab_size == 0 
-                            else new_vocab_size - n_new_special_tokens_in)
-    
-    # update/add special tokens
-    for special_token_ in new_special_tokens_in:
-        new_special_piece_ = sp_pb2_model.ModelProto().SentencePiece()
-        new_special_piece_.piece = special_token_
-        new_special_piece_.score = original_spm_model_proto.pieces[0].score  # should be 0
-        new_spm_model_proto.pieces.append(new_special_piece_) 
+    if new_special_tokens is None:
 
-    # update/add real tokens
-    for i in range(new_real_vocab_size):
-        new_spm_model_proto.pieces.append(original_spm_model_proto.pieces[i + len(original_special_tokens)])
+        print(f"Removing {n_remove_vocab_size} tokens from the end of the vocabulary file.")
+        for i in range(n_remove_vocab_size):
+            new_spm_model_proto.pieces.pop()
 
-    # write the updated vocab file into .vocab file
-    new_vocab_pieces = []
-    for p in new_spm_model_proto.pieces:
-        new_vocab_pieces.append(f"{p.piece}\t{p.score}\n")
-    output_fname = os.path.join(output_dir, vocab_txt_fname)
-    write_txt(output_fname, new_vocab_pieces)
+        # spm_model.Save(os.path.join(output_dir, vocab_model_fname))
+        # write the updated vocab file into .model file
+        output_fname = os.path.join(output_dir, vocab_model_fname)
+        with open(output_fname, "wb") as f:
+            f.write(new_spm_model_proto.SerializeToString())
+
+        original_vocab_pieces = []
+        for p in new_spm_model_proto.pieces:
+            original_vocab_pieces.append(f"{p.piece}\t{p.score}\n")
+        output_fname = os.path.join(output_dir, vocab_txt_fname)
+        write_txt(output_fname, original_vocab_pieces)
+
+    else:
+        # update/add special tokens
+        for special_token_ in new_special_tokens:
+            new_special_piece_ = sp_pb2_model.ModelProto().SentencePiece()
+            new_special_piece_.piece = special_token_
+            new_special_piece_.score = 0
+            new_spm_model_proto.pieces.append(new_special_piece_)
     
-    # write the updated vocab file into .model file
-    output_fname = os.path.join(output_dir, vocab_model_fname)
-    with open(output_fname, "wb") as f:
-        f.write(new_spm_model_proto.SerializeToString())
+        # update/add real tokens
+        new_vocab_size_update = len(original_vocab) if new_vocab_size == 0 else new_vocab_size
+        new_vocab_size_update = new_vocab_size_update - len(original_special_tokens)
+        if new_vocab_size_update < 0:
+            raise ValueError(f"new_special_tokens should be greater than {len(original_special_tokens)} if it is not 0.")
+        for i in range(new_vocab_size_update + len(original_special_tokens), len(original_vocab)):
+            new_spm_model_proto.pieces.remove(new_spm_model_proto.pieces[i])
+        
+        # write the updated vocab file into .model file
+        output_fname = os.path.join(output_dir, vocab_model_fname)
+        with open(output_fname, "wb") as f:
+            f.write(new_spm_model_proto.SerializeToString())
+
+        new_vocab_pieces = []
+        for p in new_spm_model_proto.pieces:
+            new_vocab_pieces.append(f"{p.piece}\t{p.score}\n")
+        output_fname = os.path.join(output_dir, vocab_txt_fname)
+        write_txt(output_fname, new_vocab_pieces)
+
+
+    # # original_vocab = [spm_model.IdToPiece(i) for i in range(spm_model.GetPieceSize())]
+    # # # partition the original vocab file into special tokens and regular tokens
+    # # original_special_tokens, regular_tokens = partition(lambda x: x.startswith("<"), original_vocab)
+
+    # new_special_tokens_in = new_special_tokens if new_special_tokens is not None else original_special_tokens
+    # n_new_special_tokens_in = len(new_special_tokens_in)
+
+    # if 0 < new_vocab_size <= n_new_special_tokens_in:
+    #     raise ValueError(f"new_vocab_size should be greater than {n_new_special_tokens_in} if it is not 0.")
+    
+    # new_real_vocab_size = (len(original_vocab) 
+    #                         if new_vocab_size == 0 
+    #                         else new_vocab_size - n_new_special_tokens_in)
+    
+    # new_spm_model_proto = sp_pb2_model.ModelProto()
+    # # update/add special tokens
+    # for special_token_ in new_special_tokens_in:
+    #     new_special_piece_ = sp_pb2_model.ModelProto().SentencePiece()
+    #     new_special_piece_.piece = special_token_
+    #     new_special_piece_.score = 0
+    #     new_special_piece_.type = 4
+    #     new_spm_model_proto.pieces.append(new_special_piece_) 
+
+    # # update/add real tokens
+    # for i in range(new_real_vocab_size):
+    #     new_spm_model_proto.pieces.append(original_spm_model_proto.pieces[i + len(original_special_tokens)])
+
+    #     # write the updated vocab file into .vocab file
+    # new_vocab_pieces = []
+    # for p in new_spm_model_proto.pieces:
+    #     new_vocab_pieces.append(f"{p.piece}\t{p.score}\n")
+    # output_fname = os.path.join(output_dir, vocab_txt_fname)
+    # write_txt(output_fname, new_vocab_pieces)
+
+    # new_spm_model = spm.SentencePieceProcessor()
+
+    # # for _special_token in SPECIAL_TOKENS.values():
+    # #     if _special_token in new_special_tokens_in:
+    # #         if _special_token == SPECIAL_TOKENS.BOS.value:
+    # #             new_spm_model.bos_id = new_special_tokens_in.index(_special_token)
+    # #             new_spm_model.bos_piece = _special_token
+    # #         elif _special_token == SPECIAL_TOKENS.UNK.value:
+    # #             new_spm_model.unk_id = new_special_tokens_in.index(_special_token)
+    # #             new_spm_model.unk_piece = _special_token
+    # #         elif _special_token == SPECIAL_TOKENS.EOS.value:
+    # #             new_spm_model.eos_id = new_special_tokens_in.index(_special_token)
+    # #             new_spm_model.eos_piece = _special_token
+    # #         elif _special_token == SPECIAL_TOKENS.MASK.value:
+    # #             new_spm_model.mask_id = new_special_tokens_in.index(_special_token)
+    # #             new_spm_model.mask_piece = _special_token
+    # #         else:
+    # #             raise ValueError(f"Unknown special token: {_special_token}, please check the SPECIAL_TOKENS in _constants.py.")
+            
+    # new_spm_model.LoadFromSerializedProto(new_spm_model_proto.SerializeToString())
+    
+    # # write the updated vocab file into .model file
+    # output_fname = os.path.join(output_dir, vocab_model_fname)
+    # with open(output_fname, "wb") as f:
+    #     f.write(sp_pb2_model.ModelProto().ParseFromString(new_spm_model.serialized_model_proto()).SerializeToString())
     
     print(f"DONE. Updated vocab file is saved to {output_dir} for SPM tokenizer.")
 
