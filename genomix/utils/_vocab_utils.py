@@ -28,8 +28,8 @@ from collections import OrderedDict
 from functools import wraps
 
 from ._common_utils import (
-    check_file_exist, 
-    check_dir_exist, 
+    check_file_exists, 
+    check_dir_exists, 
     read_json, 
     write_json,
     read_txt,
@@ -56,8 +56,8 @@ def _bpe_vocab_update(
 
     vocab_file = os.path.join(input_dir, vocab_json_fname)
     merge_file = os.path.join(input_dir, merge_txt_fname)
-    check_file_exist(vocab_file)
-    check_file_exist(merge_file)
+    check_file_exists(vocab_file)
+    check_file_exists(merge_file)
 
     print(f"Start updating the vocabulary file for BPE tokenizer.")
 
@@ -114,7 +114,7 @@ def _unigram_vocab_update(
         raise ValueError(f"Invalid vocab_fname: {vocab_fname}. It should be [.json]")
     
     vocab_file = os.path.join(input_dir, vocab_json_fname)
-    check_file_exist(vocab_file)
+    check_file_exists(vocab_file)
 
     print(f"Start updating the vocabulary file for UNIGRAM tokenizer.")
 
@@ -219,8 +219,8 @@ def _spm_vocab_update(
     
     vocab_model_file = os.path.join(input_dir, vocab_model_fname)
     vocab_txt_file = os.path.join(input_dir, vocab_txt_fname)
-    check_file_exist(vocab_model_file)
-    check_file_exist(vocab_txt_file)
+    check_file_exists(vocab_model_file)
+    check_file_exists(vocab_txt_file)
 
     print(f"Start updating the vocabulary file for SPM tokenizer.")
     # default spm_kwargs values:
@@ -369,8 +369,8 @@ def update_vocab(
 
     """
 
-    check_dir_exist(input_dir, create=False)
-    check_dir_exist(output_dir, create=True)
+    check_dir_exists(input_dir, create=False)
+    check_dir_exists(output_dir, create=True)
     print(f"Input directory: {input_dir}")
     print(f"Output directory: {output_dir}")
     print(f"Tokenizer model: {tokenizer_model}")
