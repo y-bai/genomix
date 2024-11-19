@@ -30,12 +30,12 @@ import json
 from itertools import tee, filterfalse
 
 
-def check_file_exist(f_name):
+def check_file_exists(f_name):
     if not os.path.exists(f_name):
         raise FileNotFoundError(f"{f_name} not found.")
 
 
-def check_dir_exist(dir_path, create=True):
+def check_dir_exists(dir_path, create=True):
     if not os.path.exists(dir_path):
         if create:
             os.makedirs(dir_path)
