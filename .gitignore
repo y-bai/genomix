@@ -8,7 +8,7 @@ tokens/
 tmp/
 
 dstool/dataset/
-dstool/vocab_gen/
+dstool/tokenizer_train/
 
 *.py[cod]
 *$py.class
