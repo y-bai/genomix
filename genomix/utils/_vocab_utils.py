@@ -19,7 +19,7 @@
                 See the License for the specific language governing permissions and
                 limitations under the License.
 
-@Desc    :   	None
+@Desc    :   	update vaoabulary file for tokenizer model of BPE, UNIGRAM, and SPM
 
 """
 import os
