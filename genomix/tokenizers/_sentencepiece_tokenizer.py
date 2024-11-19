@@ -20,9 +20,9 @@
                 limitations under the License.
 
 @Desc    :   	None
-reference: 
 
-# https://github.com/huggingface/transformers/blob/main/src/transformers/models/xlnet/tokenization_xlnet.py
+reference: 
+https://github.com/huggingface/transformers/blob/main/src/transformers/models/xlnet/tokenization_xlnet.py
 https://huggingface.co/deepseek-ai/ESFT-token-intent-lite/blob/main/tokenization_deepseek.py
 
 """
@@ -38,6 +38,7 @@ from transformers.utils import logging
 logger = logging.get_logger(__name__)
 
 VOCAB_FILES_NAMES = {"vocab_file": "spm_vocab.model"}
+
 
 class BioSeqSPMTokenizer(PreTrainedTokenizer):
     vocab_files_names = VOCAB_FILES_NAMES
