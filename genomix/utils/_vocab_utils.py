@@ -251,8 +251,7 @@ def _spm_vocab_update(
         print(f"Updating/removing {n_remove_vocab_size} tokens from the end of the vocabulary file...")
         for _ in range(n_remove_vocab_size):
             new_spm_model_proto.pieces.pop()
-
-    else:  # new_special_tokens is not None
+    else:  
         if SPECIAL_TOKENS.UNK.value not in new_special_tokens:
             print(">>>As new_special_tokens DOES NOT contain '<UNK>', additinally add '<UNK>' to new_special_tokens.")
             new_special_tokens = new_special_tokens + [SPECIAL_TOKENS.UNK.value]
