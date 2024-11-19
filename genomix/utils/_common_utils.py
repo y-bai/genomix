@@ -38,6 +38,7 @@ def check_file_exists(f_name):
 def check_dir_exists(dir_path, create=True):
     if not os.path.exists(dir_path):
         if create:
+            print(f'{dir_path} not existing, create a new one.')
             os.makedirs(dir_path)
         else:
             raise FileNotFoundError(f"{dir_path} not found.")
