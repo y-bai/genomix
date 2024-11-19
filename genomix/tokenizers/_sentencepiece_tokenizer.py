@@ -23,6 +23,7 @@
 reference: 
 
 # https://github.com/huggingface/transformers/blob/main/src/transformers/models/xlnet/tokenization_xlnet.py
+https://huggingface.co/deepseek-ai/ESFT-token-intent-lite/blob/main/tokenization_deepseek.py
 
 """
 import os
@@ -59,9 +60,10 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        
         self.sp_model_kwargs = {} if sp_model_kwargs is None else sp_model_kwargs
         # default spm_kwargs values:
-        # see: https://github.com/google/sentencepiece/blob/master/python/src/sentencepiece/__init__.py#L471
+        # see: https://github.com/google/sentencepiece/blob/master/python/src/sentencepiece/__init__.py#L423
         # spm_kwargs = {
         #     "add_bos": False,
         #     "add_eos": False,
