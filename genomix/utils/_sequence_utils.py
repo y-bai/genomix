@@ -46,12 +46,16 @@ def _get_element_by_indices(lst: List, indices: List[int]) -> List:
     return [lst[i] for i in indices]
 
 
-def chunk_sequence(sequence: str, chunk_size: int = 20000, overlap_step: int = 200) -> List[str]:
+def chunk_sequence(
+        sequence: Union[str, List[str]], 
+        chunk_size: int = 20000, 
+        overlap_step: int = 200
+    ) -> List[str]:
     """Chunk a long sequence into small pieces with overlap
 
     Parameters
     ----------
-    sequence : str
+    sequence : str or list of str
         long sequence with characters
     chunk_size : int, optional
         size of each chunk, by default 20000
@@ -63,9 +67,12 @@ def chunk_sequence(sequence: str, chunk_size: int = 20000, overlap_step: int = 2
     List[str]
         list of chunks
     """
+    if isinstance(sequence, str):
+        sequence = [sequence]
     chunks = []
-    for i in range(0, len(sequence), chunk_size - overlap_step): # the last chunk may be smaller than chunk_size
-        chunks.append(sequence[i : i + chunk_size])
+    for seq in sequence:
+        for i in range(0, len(seq), chunk_size - overlap_step): # the last chunk may be smaller than chunk_size
+            chunks.append(seq[i : i + chunk_size])
     return chunks
 
 
@@ -107,7 +114,7 @@ def batch_iterator(
 
     Parameters
     ----------
-    seq_ds : List or Dataset
+    seq_ds : List of str or Dataset
         List of string or dataset object of Huggingface datasets.
     ds_feature_name : str, optional
         The feature name in the dataset that would be used, by default 'sequence'
@@ -133,5 +140,5 @@ def batch_iterator(
     for i in range(0, n_examples, batch_size):
         yield (seq_ds[i : i + batch_size][ds_feature_name] 
                if isinstance(ds, Dataset) 
-               else ds[i : i + batch_size])
+               else ds[i : i + batch_size]) 
 
