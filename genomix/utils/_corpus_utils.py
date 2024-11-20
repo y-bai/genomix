@@ -28,9 +28,9 @@ from typing import List, Optional, Union
 from datasets import DatasetDict, load_from_disk
 
 from ._common_utils import check_dir_exists
-from ._sequence_utils import chunk_sequence
+from ._sequence_utils import chunk_sequence, down_sampling
 
-def gen_corpus_txt(
+def generate_corpus_txt(
         input_ds_names: Union[str, List[str]],
         ds_dict_key: str='train',
         ds_feature_name: str='sequence',
@@ -90,9 +90,6 @@ def gen_corpus_txt(
 
     if isinstance(input_ds_names, str):
         input_ds_names = [input_ds_names]
-    
-    output_txt_suffix = "" if output_txt_suffix is None else output_txt_suffix
-
 
     seqs = []
     for _name in input_ds_names:
@@ -110,22 +107,13 @@ def gen_corpus_txt(
         else:
             # only retrive train corpus
             seqs.extend(sequences)
-
     if isinstance(num_downsamples, int) and num_downsamples > 0:
-        print(f"{''.join([' '] * 5)} ---- downsampling training corpus...")
-        
-        rand_indx = np.random.permutation(np.arange(len(seqs)))[:num_downsamples]
-        out_file_name = os.path.join(out_dir, f"train_corpus_{num_downsamples//1000}K_{output_txt_suffix}.txt")
-        print(f"generating whole training corpus...")
-        with open(out_file_name, 'w', encoding='utf-8') as init_f:
-            for n_example in rand_indx: # range(num_downsamples):
-                init_f.write(seqs[n_example] + '\n')
-    else: 
-        out_file_name = os.path.join(out_dir, f"train_corpus_{output_txt_suffix}.txt")
-
-        print(f"generating whole training corpus...")
-        with open(out_file_name, 'w', encoding='utf-8') as f:
-            for _seq in seqs:
-                f.write(_seq + '\n')
-
-    print("======Done")
+        print(f"{''.join([' '] * 6)}down sampling sequences...")
+        seqs = down_sampling(seqs, num_downsamples)
+    
+    output_fname = "corpus.txt" if output_txt_suffix is None else f"corpus_{output_txt_suffix}.txt"
+    out_file_name = os.path.join(output_dir, output_fname)
+    print(f"generating whole training corpus...")
+    with open(out_file_name, 'w', encoding='utf-8') as f:
+        for _seq in seqs:
+            f.write(_seq + '\n')
