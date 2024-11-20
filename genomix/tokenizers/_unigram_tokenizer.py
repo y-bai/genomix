@@ -134,6 +134,7 @@ class BioSeqBaseUnigramTokenizer(BaseTokenizer):
         show_progress: bool = True,
         unk_token: str = "<UNK>",
         max_piece_length: int = 16,
+        initial_alphabet: List[str] = ['A', 'C', 'G', 'T', 'N'],
         special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>", "<MASK>"],
         length: Optional[int] = None,
     ):
@@ -145,6 +146,7 @@ class BioSeqBaseUnigramTokenizer(BaseTokenizer):
             special_tokens=special_tokens,
             unk_token=unk_token,
             max_piece_length=max_piece_length,
+            initial_alphabet=initial_alphabet,
         )
         self._tokenizer.train_from_iterator(
             iterator,
