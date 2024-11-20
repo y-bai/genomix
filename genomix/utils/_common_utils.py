@@ -89,5 +89,6 @@ def read_txt(f_name):
 def write_txt(f_name, data):
     with open(f_name, "wt", encoding="utf-8") as f:
         # write a list of lines, each line contains a '\n' at the end
-        f.writelines(data)
+        for _seq in data:
+            f.write(_seq + '\n')
 
