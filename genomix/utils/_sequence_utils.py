@@ -108,9 +108,10 @@ def batch_iterator(
         seq_ds: Union[List[str], Dataset], 
         ds_feature_name: str='sequence',
         batch_size: int=1000, 
-        max_num_examples:int=0
     ):
     """Batch iterator for dataset
+
+    e.g., used by dstool/tokenizer_train/tokenizer_train.py
 
     Parameters
     ----------
@@ -123,22 +124,15 @@ def batch_iterator(
     batch_size : int, optional
         The size of batch in each iteration, by default 1000
 
-    max_num_examples : int, optional
-        The max number of examples to be used, by default 0
-        - 0: all examples in the dataset will be used,
-            otherwise, a random subset of examples will be used.
-
     Yields
     ------
     list
         batch of sequences in the dataset
     """
-
-    ds = down_sampling(seq_ds, max_num_examples)
-    n_examples = len(ds)
+    n_examples = len(seq_ds)
     
     for i in range(0, n_examples, batch_size):
         yield (seq_ds[i : i + batch_size][ds_feature_name] 
-               if isinstance(ds, Dataset) 
-               else ds[i : i + batch_size]) 
+               if isinstance(seq_ds, Dataset) 
+               else seq_ds[i : i + batch_size]) 
 
