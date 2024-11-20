@@ -44,7 +44,7 @@ from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer
 from transformers.utils import logging
 
 from ._base_tokenizer import BaseTokenizer
-from ..utils import check_file_exist 
+from ..utils import check_file_exists 
 
 logger = logging.get_logger(__name__)
 
@@ -119,8 +119,8 @@ class BioSeqBaseBPETokenizer(BaseTokenizer):
     
     @staticmethod
     def from_file(vocab_filename: str, merges_filename: str, **kwargs):
-        check_file_exist(vocab_filename) 
-        check_file_exist(merges_filename)
+        check_file_exists(vocab_filename) 
+        check_file_exists(merges_filename)
         vocab, merges = models.BPE.read_file(vocab_filename, merges_filename)
         return BioSeqBaseBPETokenizer(vocab, merges, **kwargs)
     
