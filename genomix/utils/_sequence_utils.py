@@ -24,9 +24,27 @@
 """
 
 import numpy as np
-from typing import List
+from typing import List, Union
 
 from datasets import Dataset
+
+def _get_element_by_indices(lst: List, indices: List[int]) -> List:
+    """Get elements from a list by indices
+
+    Parameters
+    ----------
+    lst : List
+        list of elements
+    indices : List[int]
+        list of indices
+
+    Returns
+    -------
+    List
+        list of elements
+    """
+    return [lst[i] for i in indices]
+
 
 def chunk_sequence(sequence: str, chunk_size: int = 20000, overlap_step: int = 200) -> List[str]:
     """Chunk a long sequence into small pieces with overlap
@@ -51,43 +69,8 @@ def chunk_sequence(sequence: str, chunk_size: int = 20000, overlap_step: int = 2
     return chunks
 
 
-def _batch_iterator_dataset(
-        ds: Dataset, 
-        ds_feature_name: str='sequence',
-        batch_size: int=1000, 
-        max_num_examples:int=0
-    ):
-    """Batch iterator for dataset
-
-    Parameters
-    ----------
-    ds : Dataset
-        dataset object of Huggingface datasets
-    ds_feature_name : str, optional
-        The feature name in the dataset that would be used, by default 'sequence'
-    batch_size : int, optional
-        The size of batch in each iteration, by default 1000
-    max_num_examples : int, optional
-        The max number of examples to be used, by default 0
-        - 0: all examples in the dataset will be used,
-            otherwise, a random subset of examples will be used.
-
-    Yields
-    ------
-    list
-        batch of sequences in the dataset
-    """
-    n_total_examples = len(ds)
-    n_examples = n_total_examples if max_num_examples == 0 else max_num_examples
-    rand_idx = (np.arange(n_total_examples) 
-                if max_num_examples == 0 
-                else np.random.permutation(np.arange(n_total_examples))[:n_examples])
-    for i in range(0, n_examples, batch_size):
-        yield ds[rand_idx[i : i + batch_size]][ds_feature_name]
-
-
-def downsampling_dataset(
-        ds: Dataset, 
+def down_sampling(
+        seq_ds: Union[List[str], Dataset], 
         max_num_examples: int=400000
     ) -> Dataset:
     """Downsampling dataset
@@ -106,10 +89,49 @@ def downsampling_dataset(
     Dataset
         downsampled dataset
     """
-    n_total_examples = len(ds)
-    n_examples = n_total_examples if max_num_examples == 0 else max_num_examples
-    rand_idx = (np.arange(n_total_examples) 
-                if max_num_examples == 0 
-                else np.random.permutation(np.arange(n_total_examples))[:n_examples])
-    return ds.select(rand_idx)
+    if max_num_examples == 0:
+        return seq_ds
+    else:
+        n_total_examples = len(seq_ds)
+        rand_idx = np.random.permutation(np.arange(n_total_examples))[:max_num_examples]
+        return seq_ds.select(rand_idx) if isinstance(seq_ds, Dataset) else _get_element_by_indices(seq_ds, rand_idx)
     
+
+def batch_iterator(
+        seq_ds: Union[List[str], Dataset], 
+        ds_feature_name: str='sequence',
+        batch_size: int=1000, 
+        max_num_examples:int=0
+    ):
+    """Batch iterator for dataset
+
+    Parameters
+    ----------
+    seq_ds : List or Dataset
+        List of string or dataset object of Huggingface datasets.
+    ds_feature_name : str, optional
+        The feature name in the dataset that would be used, by default 'sequence'
+        - This is only used when seq_ds is a dataset object.
+
+    batch_size : int, optional
+        The size of batch in each iteration, by default 1000
+
+    max_num_examples : int, optional
+        The max number of examples to be used, by default 0
+        - 0: all examples in the dataset will be used,
+            otherwise, a random subset of examples will be used.
+
+    Yields
+    ------
+    list
+        batch of sequences in the dataset
+    """
+
+    ds = down_sampling(seq_ds, max_num_examples)
+    n_examples = len(ds)
+    
+    for i in range(0, n_examples, batch_size):
+        yield (seq_ds[i : i + batch_size][ds_feature_name] 
+               if isinstance(ds, Dataset) 
+               else ds[i : i + batch_size])
+
