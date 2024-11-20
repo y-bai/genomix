@@ -102,8 +102,7 @@ def generate_corpus_txt(
         sequences = _ds[ds_dict_key][ds_feature_name] if isinstance(_ds, DatasetDict) else _ds[ds_feature_name]
         if isinstance(chunk_size, int) and chunk_size > 0:
             print(f"{''.join([' '] * 6)}chunking sequences...")
-            for _seq in sequences:
-                seqs.extend(chunk_sequence(_seq, chunk_size, overlap_step))
+            seqs.extend(chunk_sequence(sequences, chunk_size, overlap_step))
         else:
             # only retrive train corpus
             seqs.extend(sequences)
