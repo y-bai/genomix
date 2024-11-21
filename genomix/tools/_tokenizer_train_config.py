@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		_train_func.py
+@File    :		_tokenizer_train_config.py
 @Time    :   	2024/11/21 12:24:04
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
