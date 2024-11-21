@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		_vocab_utils.py
+@File    :		_tokenizer_vocab_update.py
 @Time    :   	2024/11/15 14:38:10
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
