@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		_corpus_utils.py
+@File    :		_corpus_txt_build.py
 @Time    :   	2024/11/19 16:31:56
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
@@ -19,7 +19,7 @@
                 See the License for the specific language governing permissions and
                 limitations under the License.
 
-@Desc    :   	generate corpus txt file from the input hg datasets
+@Desc    :   	generate corpus file from input large hg datasets
 
 """
 
@@ -38,7 +38,7 @@ from ..utils import (
 
 logger = logging.getLogger(__name__)
 
-def generate_corpus_txt(
+def generate_corpus(
         input_ds_names: Union[str, List[str]],
         ds_dict_key: str='train',
         ds_feature_name: str='sequence',
