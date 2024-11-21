@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :      __init__.py
-@Time    :      2024/02/27 09:52:02
-@Author  :      Yong Bai 
-@Contact :      baiyong at genomics.cn
+@File    :		__init__.py
+@Time    :   	2024/11/21 13:30:38
+@Author  :   	Yong Bai 
+@Contact :   	baiyong at genomics.cn
 @License :   	(C)Copyright 2023-2024, Yong Bai
 
                 Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,17 +18,26 @@
                 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
                 See the License for the specific language governing permissions and
                 limitations under the License.
-                
-@Desc    :      None
+
+@Desc    :   	None
 
 """
 
-from ._bpe_tokenizer import BioSeqBaseBPETokenizer, BioSeqBPETokenizer
-from ._bpe_tokenizer_fast import BioSeqBPETokenizerFast
-from ._unigram_tokenizer import BioSeqBaseUnigramTokenizer, BioSeqUnigramTokenizer
-from ._unigram_tokenizer_fast import BioSeqUnigramTokenizerFast
-from ._sentencepiece_tokenizer import BioSeqSPMTokenizer
-from ._sentencepiece_tokenizer_fast import BioSeqSPMTokenizerFast
-from ._char_tokenizer import CharacterTokenizer
+from ._tokenizer_train_config import (
+    TrainTokenizerBaseConfig, 
+    TrainBPETokenizerConfig, 
+    TrainUnigramTokenizerConfig, 
+    TrainSPMTokenizerConfig
+)
 
-from ._tokenizer_map import BioSeqTokenizerMap
+from ._tokenizer_train_funcs import (
+    bpe_tokenizer_train, 
+    unigram_tokenizer_train,
+    spm_tokenizer_train
+)
+
+from ._tokenizer_vocab_update import (
+    bpe_vocab_update,
+    unigram_vocab_update,
+    spm_vocab_update
+)
