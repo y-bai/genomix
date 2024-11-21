@@ -46,7 +46,8 @@ def generate_corpus(
         output_txt_suffix: Optional[str]=None,
         num_downsamples: int=400000,
         chunk_size: int=20000,
-        overlap_step: int=200
+        overlap_step: int=200,
+        target_file_type: str='txt'
 ):
     """Generate training corpus txt file from the input dataset
 
