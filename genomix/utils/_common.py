@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		_common_utils.py
+@File    :		_common.py
 @Time    :   	2024/11/15 16:03:54
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
