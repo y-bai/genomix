@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		_sequence_utils.py
+@File    :		_sequence.py
 @Time    :   	2024/11/19 16:20:09
 @Author  :   	Yong Bai 
 @Contact :   	baiyong at genomics.cn
@@ -19,7 +19,7 @@
                 See the License for the specific language governing permissions and
                 limitations under the License.
 
-@Desc    :   	None
+@Desc    :   	functions for processing sequence data, including chunking, down-sampling, and batch iteration
 
 """
 
