@@ -19,11 +19,13 @@
                 See the License for the specific language governing permissions and
                 limitations under the License.
 
-@Desc    :   	None
+@Desc    :   	constants and configurations
 
 """
 
 from enum import Enum
+import os
+from ._common import check_dir_exists
 
 class ExtendedEnum(Enum):
     @classmethod
@@ -35,12 +37,31 @@ class TOKENIZER_MODELS(ExtendedEnum):
     UNIGRAM = "UNIGRAM"
     SPM = "SPM"
 
+# under for SPM tokenizer model prefix
+SPM_VOCAB_MODEL_PREFIX = "spm_vocab"
+
 class SPECIAL_TOKENS(ExtendedEnum):
     BOS = "<BOS>"
     EOS = "<EOS>"
     UNK = "<UNK>"
     MASK = "<MASK>"
     # `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
-
-# initial alphabet to be retained (e.g, DNA sequence) for BPE tokneizer
+# initial alphabet to be used for BPE/UNIGRAM tokneizer training
 INITIAL_ALPHABETS = list("ACGTN")
+
+# CACHE_DIR
+CACHE_ROOT_DIR = check_dir_exists(
+    os.getenv('GENOMIX_HOME', os.path.expanduser('~/.genomix')), 
+    create=True)
+CACHE_OUTPUT_DIR = check_dir_exists(
+    os.path.join(CACHE_ROOT_DIR, 'output'), 
+    create=True)
+CACHE_DATA_DIR = check_dir_exists(
+    os.path.join(CACHE_ROOT_DIR, 'data'), 
+    create=True)
+
+
+
+
+
+
