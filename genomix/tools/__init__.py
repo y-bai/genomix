@@ -23,20 +23,20 @@
 
 """
 
-from ._tokenizer_train_config import (
+from .train_tokenizer_config import (
     TrainTokenizerBaseConfig, 
     TrainBPETokenizerConfig, 
     TrainUnigramTokenizerConfig, 
     TrainSPMTokenizerConfig
 )
 
-from ._tokenizer_train_funcs import (
+from .train_tokenizer_process import (
     bpe_tokenizer_train, 
     unigram_tokenizer_train,
     spm_tokenizer_train
 )
 
-from ._tokenizer_vocab_update import (
+from .update_tokenizer_vocab import (
     bpe_vocab_update,
     unigram_vocab_update,
     spm_vocab_update

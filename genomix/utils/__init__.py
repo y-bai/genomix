@@ -24,32 +24,36 @@
 
 """
 
-from ._common import (
-    check_dir_exists, 
-    check_file_exists, 
-    partition, 
-    read_json, 
-    read_txt, 
-    write_json, 
-    write_txt
+from .common import (
+    check_file_exists,
+    check_dir_exists,
+    read_json_file,
+    write_json_file,
+    read_txt_file,
+    write_txt_file,
+    copy_file,
+    partition_list,
 )
 
-from ._sequence import (
-    chunk_sequence, 
-    down_sampling, 
-    batch_iterator
+from .sequence import (
+    chunk_sequence,
+    down_sampling,
+    batch_iterator,
 )
 
-from ._constants import (
-    SPECIAL_TOKENS, 
-    TOKENIZER_MODELS, 
-    INITIAL_ALPHABETS, 
-    SPM_VOCAB_MODEL_PREFIX,
-    CACHE_ROOT_DIR,
-    CACHE_OUTPUT_DIR,
-    CACHE_DATA_DIR,
-)
 
-from ._decorators import validate_parameter
+# # number of processors to be used for parallel processing
+# # N_PROC = 16 # os.cpu_count(), minmum is 1
+# def set_n_proc(n: int):
+#     global N_PROC
+#     N_PROC = n
+
+# # tqdm disable flag
+# # TQDM_DISABLE = False
+# def set_tqdm_disable(flag: bool):
+#     global TQDM_DISABLE
+#     TQDM_DISABLE = flag
+
+
 
 
