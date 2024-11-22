@@ -37,8 +37,8 @@ class ExtendedEnum(Enum):
 
 class SPECIAL_TOKENS(ExtendedEnum):
     BOS = "<BOS>"
-    EOS = "<EOS>"
     UNK = "<UNK>"
+    EOS = "<EOS>"
     MASK = "<MASK>"
     # `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
 
@@ -67,7 +67,6 @@ _make_dir_if_not_exists(GENOMIX_HOME)
 _make_dir_if_not_exists(GENOMIX_CACHE_DIR)
 _make_dir_if_not_exists(GENOMIX_CACHE_DATA_DIR)
 _make_dir_if_not_exists(GENOMIX_CACHE_OTHER_DIR)
-
 
 # the size to be viewed as large file
 LARGE_FILE_SIZE = 1024 * 1024 * 500  # 500MB
