@@ -23,12 +23,13 @@
 
 """
 
+from collections.abc import Mapping
 from functools import wraps
 from itertools import chain
-from typing import Any, List, Mapping, Union
+from typing import Any, List, Union
 from inspect import signature
 
-def validate_args(*, name: str, required_keys_or_values: Union[Any, Mapping]=None):
+def validate_args(*, name: str, required_keys_or_values: Union[Any, List]=None):
     """Validate the dict or list parameters in the function signature
 
     Parameters
@@ -36,8 +37,12 @@ def validate_args(*, name: str, required_keys_or_values: Union[Any, Mapping]=Non
     name : str
         the name of the parameter in the function signature
     required_keys_or_values : Any, optional
-        if name is a dict, then required_keys_or_values is the required keys in the dict.
-        if name is a list, then required_keys_or_values is the required values in the list.
+        if `name` is a `dict` type parameter in the original function, 
+            then `required_keys_or_values` is the required keys in the dict.
+        if `name` is a `list` type parameter in the original function, 
+            then `required_keys_or_values` is the required values in the list.
+        if `name` is a `int` or `float` or `str` type parameter in the original function, 
+            then `required_keys_or_values` is just a value.
     Raises
     ------
     ValueError
@@ -55,7 +60,7 @@ def validate_args(*, name: str, required_keys_or_values: Union[Any, Mapping]=Non
 
     """
 
-    if not isinstance(required_keys_or_values, Mapping):
+    if not isinstance(required_keys_or_values, List):
         required_keys_or_values = [required_keys_or_values]
     def _inner_check_parameters(func):
         sig = signature(func)
@@ -66,10 +71,14 @@ def validate_args(*, name: str, required_keys_or_values: Union[Any, Mapping]=Non
                 kwargs.items(),  # Kwargs values
             ):
                 if arg_name == name:
-#                   validate_repo_id(arg_value)
                     for key_or_vals in required_keys_or_values:
-                        if key_or_vals not in arg_value:
-                            raise ValueError(f"Missing required key '{key_or_vals}' in '{name}' parameters")
+                        if isinstance(arg_value, Mapping):
+                            if key_or_vals not in arg_value:
+                                raise ValueError(f"Missing required '{key_or_vals}' in '{name}' parameters")
+                        else:
+                            if key_or_vals != arg_value:
+                                raise ValueError(f"Provided {arg_value} is not equal to the " 
+                                                 f"required {key_or_vals} by '{name}' parameters")
            
             return func(*args, **kwargs)
         return inner_func
