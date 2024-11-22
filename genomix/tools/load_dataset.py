@@ -42,7 +42,6 @@ from ..utils import (
 
 from ..utils._cache import load_from_cache, save_to_cache
 from ..utils.constants import (
-    SEQENCE_FEATURE_NAME_IN_DATASET_ORIGINAL,
     SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
 )
 
@@ -142,7 +141,7 @@ def load_dataset_to_txt(
         logger.info(f"corpus txt file saved at: {out_file_name}")
         return
     
-    _ds = load_dataset_to_dataset(
+    _ds, _seq_feat_name = load_dataset_to_dataset(
         input_ds_name,
         ds_dict_key, 
         ds_feature_name,
@@ -154,7 +153,7 @@ def load_dataset_to_txt(
     )
 
     logger.info(f"writing corpus into file...")
-    write_txt_file(out_file_name, _ds['chunked_sequence'], mode='a', n_proc=n_proc, disable_tqdm=disable_tqdm)
+    write_txt_file(out_file_name, _ds[_seq_feat_name], mode='a', n_proc=n_proc, disable_tqdm=disable_tqdm)
     
     cached = save_to_cache(out_file_name, file_meta=meta_info)
     if not cached:
@@ -213,6 +212,8 @@ def load_dataset_to_dataset(
     # 0. load the input datasets
     ds = load_from_disk(input_corpus_name)
 
+    seq_feat_name = input_corpus_ds_feature
+
     if isinstance(ds, DatasetDict):
         ds = ds[input_corpus_ds_key]
     
@@ -233,8 +234,9 @@ def load_dataset_to_dataset(
             num_proc=num_proc, 
             remove_columns=ds.column_names
         )
+        seq_feat_name = SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
     
-    return ds, 
+    return ds, seq_feat_name
 
 
 
