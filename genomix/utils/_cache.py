@@ -35,14 +35,12 @@ from .common import check_file_exists, check_dir_exists, copy_file
 logger = logging.getLogger(__name__)
 
 
-def load_from_cache(
+def _find_from_cache(
     file_name: str, 
     file_meta: OrderedDict=None, 
     cache_dir:str=None,
 ):
-    """Load file from cache
-
-    Currently, only support txt file
+    """check if file alrady exists in cache
 
     Parameters
     ----------
@@ -78,7 +76,7 @@ def load_from_cache(
     return str(f_path), f_size
 
 
-def save_to_cache(
+def _write_to_cache(
     file_name: str, 
     file_meta: OrderedDict=None, 
     cache_dir:str=None,
@@ -132,7 +130,6 @@ def _meta_dir(file_meta: OrderedDict=None):
     meta_dir = _md5(json.dumps(meta_info))
     return meta_dir
 
-# filename, file_length,
 def _md5(data_meta: str):
     import hashlib
     hex_dig = hashlib.md5(data_meta.encode()).hexdigest()
