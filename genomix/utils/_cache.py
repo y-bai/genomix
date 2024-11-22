@@ -23,9 +23,8 @@
 
 """
 
+import os
 from collections import OrderedDict
-import shutil
-from pathlib import Path
 import json
 import logging
 
@@ -35,8 +34,7 @@ from .common import check_file_exists, check_dir_exists, copy_file
 logger = logging.getLogger(__name__)
 
 
-def _find_from_cache(
-    file_name: str, 
+def _find_from_cache( 
     file_meta: OrderedDict=None, 
     cache_dir:str=None,
 ):
@@ -44,8 +42,6 @@ def _find_from_cache(
 
     Parameters
     ----------
-    file_name : str
-        file name, not with full path
     file_meta : OrderedDict, optional
         file meta information, by default None
 
@@ -64,31 +60,27 @@ def _find_from_cache(
     if cache_dir is None:
         cache_dir = GENOMIX_CACHE_DATA_DIR
     
-    meta_dir = _meta_dir(file_meta)
-    
-    f_path = Path(cache_dir) / meta_dir / file_name
-
-    if not check_file_exists(str(f_path), _raise_error=False):
-        logger.warning(f"Cache file {f_path} not found.")
+    fname = _file_name(cache_dir, file_meta)
+    if not check_file_exists(fname, _raise_error=False):
+        logger.warning(f"Cache file not found.")
         return None, 0
     
-    f_size = f_path.stat().st_size
-    return str(f_path), f_size
+    f_size = os.stat(fname).st_size
+    return str(fname), f_size
 
 
 def _write_to_cache(
-    file_name: str, 
+    fname_to_cache: str,
     file_meta: OrderedDict=None, 
     cache_dir:str=None,
 ):
-    """Save file to cache
-
-    Currently, only support txt file
+    """write file to cache
 
     Parameters
     ----------
-    file_name : str
+    fname_to_cache : str
         file name, with full path
+
     file_meta : OrderedDict, optional
         file meta information, by default None
 
@@ -104,33 +96,21 @@ def _write_to_cache(
     if cache_dir is None:
         cache_dir = GENOMIX_CACHE_DATA_DIR
     
-    meta_dir = _meta_dir(file_meta)
-    
-    f_path = Path(cache_dir) / meta_dir
-
-    cache_dir = check_dir_exists(str(f_path), create=True, _raise_error=False)
-    if cache_dir is None:
-        logger.warning(f"Cache directory {f_path} not found.")
-        return False
-    
-    # check the source file
-    if not check_file_exists(file_name, _raise_error=False):
-        logger.warning(f"cache file {file_name} failed.")
-        return False
-    
-    fscr = Path(file_name)
-    fdst = f_path / fscr.name
-    copy_file(file_name, str(fdst))
+    _cache_fname = _file_name(cache_dir, file_meta)
+    copy_file(fname_to_cache, _cache_fname)
 
     return True
 
+def _md5(data_meta: str):
+    import hashlib
+    hex_dig = hashlib.md5(data_meta.encode()).hexdigest()
+    return hex_dig
 
 def _meta_dir(file_meta: OrderedDict=None):
     meta_info = '' if file_meta is None else json.dumps(file_meta)
     meta_dir = _md5(json.dumps(meta_info))
     return meta_dir
 
-def _md5(data_meta: str):
-    import hashlib
-    hex_dig = hashlib.md5(data_meta.encode()).hexdigest()
-    return hex_dig
+def _file_name(cache_dir: str, file_meta: OrderedDict=None):
+    meta_dir = _meta_dir(file_meta)
+    return os.path.join(cache_dir, f"{meta_dir}/{meta_dir}")
