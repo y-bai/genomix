@@ -30,7 +30,7 @@ from .train_tokenizer_config import (
     TrainSPMTokenizerConfig
 )
 
-from .train_tokenizer_process import (
+from .train_tokenizer import (
     bpe_tokenizer_train, 
     unigram_tokenizer_train,
     spm_tokenizer_train
