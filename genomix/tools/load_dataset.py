@@ -40,7 +40,7 @@ from ..utils import (
     chunk_sequence,
 )
 
-from ..utils._cache import load_from_cache, save_to_cache
+from ..utils._cache import _find_from_cache, _write_to_cache
 from ..utils.constants import (
     SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
 )
@@ -131,7 +131,7 @@ def load_dataset_to_txt(
         batch_size=batch_size,
     )
     
-    cache_fname, cache_fsize = load_from_cache(
+    cache_fname, cache_fsize = _find_from_cache(
         out_file_name,
         file_meta = meta_info,
     )
@@ -155,7 +155,7 @@ def load_dataset_to_txt(
     logger.info(f"writing corpus into file...")
     write_txt_file(out_file_name, _ds[_seq_feat_name], mode='a', n_proc=n_proc, disable_tqdm=disable_tqdm)
     
-    cached = save_to_cache(out_file_name, file_meta=meta_info)
+    cached = _write_to_cache(out_file_name, file_meta=meta_info)
     if not cached:
         logger.warning(f"something wrong when caching the file.")
 
