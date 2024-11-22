@@ -68,7 +68,7 @@ class TrainTokenizerBaseConfig:
     data_iterator: Iterator[str] = None     # need to be set
     output_dir: str = None                  # need to be set
     vocab_size: int = 3000
-    length: int = 10000
+    length: int = 10000                     # this is for tqdm progress bar
 
     def to_dict(self):
         return self.__dict__
