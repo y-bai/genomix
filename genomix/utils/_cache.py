@@ -29,7 +29,7 @@ import json
 import logging
 
 from .constants import GENOMIX_CACHE_DATA_DIR
-from .common import check_file_exists, copy_file
+from .common import check_file_exists, check_dir_exists, copy_file
 
 logger = logging.getLogger(__name__)
 
@@ -106,11 +106,13 @@ def _md5(data_meta: str):
     hex_dig = hashlib.md5(data_meta.encode()).hexdigest()
     return hex_dig
 
-def _meta_dir(file_meta: OrderedDict=None):
+def _meta_md5(file_meta: OrderedDict=None):
     meta_info = '' if file_meta is None else json.dumps(file_meta)
-    meta_dir = _md5(json.dumps(meta_info))
-    return meta_dir
+    meta_md5 = _md5(json.dumps(meta_info))
+    return meta_md5
 
 def _file_name(cache_dir: str, file_meta: OrderedDict=None):
-    meta_dir = _meta_dir(file_meta)
-    return os.path.join(cache_dir, f"{meta_dir}/{meta_dir}")
+    meta_dir = _meta_md5(file_meta)
+    cache_full_dir = os.path.join(cache_dir, meta_dir)
+    check_dir_exists(cache_full_dir, create=True)
+    return os.path.join(cache_full_dir, f"{meta_dir}")
