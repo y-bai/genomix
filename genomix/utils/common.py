@@ -175,12 +175,13 @@ def _write_small_txt(f_name, data, mode: str = 'a', disable_tqdm: bool=False):
 def _write_chunk_txt(
         f_name: str, 
         chunk: List[str], 
-        lock: mp.Lock, 
         ith_chunk: int = 0, 
         mode: str = 'a', 
         disable_tqdm: bool = False
     ):
-
+    """Write a chunk of lines to a file."""
+    # Create a lock for thread-safe writing
+    lock = mp.Lock()
     with lock:
         with open(f_name, mode) as f:
             # write a list of lines, each line contains a '\n' at the end
@@ -203,9 +204,10 @@ def _parallel_write_txt(
     # Create a lock for thread-safe writing
     lock = mp.Lock()
 
-    # Use multiprocessing Pool to write chunks in parallel
-    with mp.Pool(processes=n_proc) as pool:
-        pool.starmap(_write_chunk_txt, [(file_name, chunk, lock, i, 'a', disable_tqdm) for i, chunk in enumerate(chunks)])
+    with lock:
+        # Use multiprocessing Pool to write chunks in parallel
+        with mp.Pool(processes=n_proc) as pool:
+            pool.starmap(_write_chunk_txt, [(file_name, chunk, lock, i, 'a', disable_tqdm) for i, chunk in enumerate(chunks)])
 
 
 def _read_chunk_txt(file_name: str, start_line: int, num_lines: int) -> List[str]:
@@ -229,12 +231,14 @@ def _parallel_read_txt(file_name: str, chunk_size: int = 5000, n_proc: int = 16)
     chunks = [(file_name, i, chunk_size) for i in range(0, total_lines, chunk_size)]
 
     logging.info(f"reading {len(chunks)} chunks, total {total_lines} lines from {file_name}")
-    
-    # Use multiprocessing Pool to read chunks in parallel
-    with mp.Pool(processes=n_proc) as pool:
-        results = pool.starmap(_read_chunk_txt, chunks)
-    
-    # Flatten the list of results
-    flattened_results = [item for sublist in results for item in sublist]
-    return flattened_results
+
+    lock = mp.Lock()
+    with lock:
+        # Use multiprocessing Pool to read chunks in parallel
+        with mp.Pool(processes=n_proc) as pool:
+            results = pool.starmap(_read_chunk_txt, chunks)
+        
+        # Flatten the list of results
+        flattened_results = [item for sublist in results for item in sublist]
+        return flattened_results
 
