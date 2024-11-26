@@ -95,24 +95,29 @@ def read_txt_file(f_name, n_proc: int=16):
     else:
         return _parallel_read_txt(
             f_name, 
-            chunk_size=BATCH_NUM_SEQS, 
+            batch_size=BATCH_NUM_SEQS, 
             n_proc=n_proc)
 
 
-def write_txt_file(f_name, data, mode: str = 'a', n_proc: int=16, disable_tqdm: bool=False):
+def write_txt_file(
+        f_name: str, 
+        data: List[str], 
+        n_proc: int=16, 
+        disable_tqdm: bool=False,
+        batch_size: int = BATCH_NUM_SEQS):
     """Write a list of strings to a text file."""
 
     if len(data) <= BATCH_NUM_SEQS:
         _write_small_txt(
             f_name, data, 
-            mode=mode, 
+            mode='a',
             disable_tqdm=disable_tqdm
         )
     else:
         _parallel_write_txt(
             f_name, 
             data, 
-            chunk_size=BATCH_NUM_SEQS, 
+            batch_size=batch_size, 
             n_proc=n_proc, 
             disable_tqdm=disable_tqdm
         )
@@ -123,15 +128,16 @@ def copy_file(src_file, dst_file):
     if os.stat(src_file).st_size <= LARGE_FILE_SIZE:
         shutil.copy(src_file, dst_file)
     else:
-        with open(src_file, "rb") as src_f, open(dst_file, "wb") as dst_f:
-            # while True:
-            #     chunk = src_f.read(chunk_size)
-            #     if not chunk:
-            #         break
-            #     dst_f.write(chunk)
+        with open(src_file, "r") as src_f, open(dst_file, "w") as dst_f:
+            while True:
+                chunk = src_f.read(BATCH_NUM_SEQS)
+                if not chunk:
+                    break
+                dst_f.write(chunk)
 
             # using shutil.copyfileobj
-            shutil.copyfileobj(src_f, dst_f, length=LARGE_FILE_SIZE)
+            # file mode must be 'b' (binary)
+            # shutil.copyfileobj(src_f, dst_f, length=LARGE_FILE_SIZE)
 
 
 def partition_list(condition, iterable_input):
@@ -164,8 +170,7 @@ def _read_samll_txt(f_name):
             data.append(line.strip('\n')) # remove '\n' at the end
     return data
 
-
-def _write_small_txt(f_name, data, mode: str = 'a', disable_tqdm: bool=False):
+def _write_small_txt(f_name, data, mode: str = 'w', disable_tqdm: bool=False):
     """Write a list of strings with small count to a text file."""
     with open(f_name, mode, encoding="utf-8") as f:
         # write a list of lines, each line contains a '\n' at the end
@@ -174,41 +179,36 @@ def _write_small_txt(f_name, data, mode: str = 'a', disable_tqdm: bool=False):
  
 def _write_chunk_txt(
         f_name: str, 
-        chunk: List[str], 
-        ith_chunk: int = 0, 
+        batch: List[str], 
+        ith_batch: int = 0, 
         mode: str = 'a', 
         disable_tqdm: bool = False
     ):
     """Write a chunk of lines to a file."""
-    # Create a lock for thread-safe writing
-    lock = mp.Lock()
-    with lock:
-        with open(f_name, mode) as f:
-            # write a list of lines, each line contains a '\n' at the end
-            for _seq in tqdm(chunk, desc=f"{ith_chunk}th chunk writing", disable=disable_tqdm):
-                f.write(_seq + '\n')
 
+    with open(f_name, mode) as f:
+        # write a list of lines, each line contains a '\n' at the end
+        for _seq in tqdm(batch, desc=f"{ith_batch}th batch writing", disable=disable_tqdm):
+            f.write(_seq + '\n')
 
 def _parallel_write_txt(
         file_name: str, 
         data: List[str], 
-        chunk_size: int = 5000, 
+        batch_size: int = 5000, 
         n_proc: int = 16, 
         disable_tqdm: bool = False
     ):
     """Write a list of strings to a text file in parallel."""
     # Split data into chunks
-    chunks = [data[i:i + chunk_size] for i in range(0, len(data), chunk_size)]
-    logger.info(f"writing {len(chunks)} chunks to {file_name}")
+    batchs = [data[i:i + batch_size] for i in range(0, len(data), batch_size)]
+    logger.info(f"writing {len(batchs)} batchs to {file_name}")
 
-    # Create a lock for thread-safe writing
-    lock = mp.Lock()
-
-    with lock:
-        # Use multiprocessing Pool to write chunks in parallel
-        with mp.Pool(processes=n_proc) as pool:
-            pool.starmap(_write_chunk_txt, [(file_name, chunk, lock, i, 'a', disable_tqdm) for i, chunk in enumerate(chunks)])
-
+    # Use multiprocessing Pool to write chunks in parallel
+    with mp.Pool(processes=n_proc) as pool:
+        pool.starmap(
+            _write_chunk_txt, 
+            [(file_name, batch, i, 'a', disable_tqdm) for i, batch in enumerate(batchs)]
+        )
 
 def _read_chunk_txt(file_name: str, start_line: int, num_lines: int) -> List[str]:
     """Read a chunk of lines from a file."""
@@ -221,24 +221,24 @@ def _read_chunk_txt(file_name: str, start_line: int, num_lines: int) -> List[str
                 break
     return lines
 
-def _parallel_read_txt(file_name: str, chunk_size: int = 5000, n_proc: int = 16) -> List[str]:
+def _parallel_read_txt(file_name: str, batch_size: int = 5000, n_proc: int = 16) -> List[str]:
     """Read a large text file in parallel."""
     # Determine the total number of lines in the file
     with open(file_name, "rt", encoding="utf-8") as f:
         total_lines = sum(1 for _ in f)
     
     # Create chunks based on line numbers
-    chunks = [(file_name, i, chunk_size) for i in range(0, total_lines, chunk_size)]
+    batchs = [(file_name, i, batch_size) for i in range(0, total_lines, batch_size)]
 
-    logging.info(f"reading {len(chunks)} chunks, total {total_lines} lines from {file_name}")
+    logging.info(f"reading {len(batchs)} batchs, total {total_lines} lines from {file_name}")
 
-    lock = mp.Lock()
-    with lock:
-        # Use multiprocessing Pool to read chunks in parallel
-        with mp.Pool(processes=n_proc) as pool:
-            results = pool.starmap(_read_chunk_txt, chunks)
-        
-        # Flatten the list of results
-        flattened_results = [item for sublist in results for item in sublist]
-        return flattened_results
+
+    # Use multiprocessing Pool to read chunks in parallel
+    with mp.Pool(processes=n_proc) as pool:
+        results = pool.starmap(_read_chunk_txt, batchs)
+    
+    # Flatten the list of results
+    flattened_results = [item for sublist in results for item in sublist]
+    return flattened_results
+    
 
