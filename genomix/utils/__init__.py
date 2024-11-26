@@ -31,8 +31,8 @@ from .common import (
     write_json_file,
     read_txt_file,
     write_txt_file,
-    copy_file,
     partition_list,
+    copy_txt_file,
 )
 
 from .sequence import (
