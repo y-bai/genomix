@@ -164,6 +164,7 @@ def spm_tokenizer_train(train_kwargs: dict):
             'max_sentencepiece_length': 16,     # the maximum length of token
             'max_sentence_length': 20000,       # the maximum length of sentence
             'num_threads': 64,              # the number of threads
+            'train_extremely_large_corpus': False, # default value
         }
     """
     import sentencepiece as spm
