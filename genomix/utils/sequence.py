@@ -26,6 +26,7 @@
 import numpy as np
 from typing import List, Union
 from datasets import Dataset
+import multiprocessing as mp
 
 from .constants import BATCH_NUM_SEQS
 
@@ -66,8 +67,6 @@ def chunk_sequence(
 
     if isinstance(sequence, str):
         sequence = [sequence]
-    
-    print(f'sequence length: {len(sequence)}')
 
     if not _is_seq_num_large(len(sequence)):
         chunks = []
@@ -76,19 +75,20 @@ def chunk_sequence(
                 chunks.append(seq[i : i + chunk_size])
                 # chunks += seq[i : i + chunk_size]
         return chunks
-    return None
-    # lock = mp.Lock()
-    # with lock:
-    #     # rewrite to allow parallel processing
-    #     def chunk_with_overlap(seq, size, step):
-    #         return [seq[i:i + size] for i in range(0, len(seq), size - step)] 
-    #     # Use multiprocessing Pool to chunk sequence in parallel
-    #     with mp.Pool(processes=n_proc) as pool:
-    #         chunks = pool.starmap(chunk_with_overlap, [(_seq, chunk_size, overlap_step) for _seq in sequence])
 
-    #     # Flatten the list of chunks
-    #     flattened_chunks = [item for sublist in chunks for item in sublist]
-    #     return flattened_chunks
+    # rewrite to allow parallel processing
+    def chunk_with_overlap(seq, size, step):
+        return [seq[i:i + size] for i in range(0, len(seq), size - step)] 
+    
+    lock = mp.Lock()
+    with lock:
+        # Use multiprocessing Pool to chunk sequence in parallel
+        with mp.Pool(processes=n_proc) as pool:
+            chunks = pool.starmap(chunk_with_overlap, [(_seq, chunk_size, overlap_step) for _seq in sequence])
+
+        # Flatten the list of chunks
+        flattened_chunks = [item for sublist in chunks for item in sublist]
+        return flattened_chunks
 
 
 def down_sampling(
@@ -192,26 +192,27 @@ def _get_elements_by_indices(
     ['a', 'c']
         
     """
-    import multiprocessing as mp
     
     assert len(lst) >= max(indices), "Index out of range"
 
     if not _is_seq_num_large(len(indices)):
         return [lst[i] for i in indices]
-
-    def fetch_elements(chunk):
-        return [lst[i] for i in chunk]
     
-    # Split indices into chunks
-    chunk_size = BATCH_NUM_SEQS
-    chunks = [indices[i:i + chunk_size] for i in range(0, len(indices), chunk_size)]
+    lock = mp.Lock()
+    with lock:
+        def fetch_elements(chunk):
+            return [lst[i] for i in chunk]
+        
+        # Split indices into chunks
+        chunk_size = BATCH_NUM_SEQS
+        chunks = [indices[i:i + chunk_size] for i in range(0, len(indices), chunk_size)]
 
-    # Use multiprocessing Pool to fetch elements in parallel
-    with mp.Pool(processes=n_proc) as pool:
-        results = pool.map(fetch_elements, chunks)
+        # Use multiprocessing Pool to fetch elements in parallel
+        with mp.Pool(processes=n_proc) as pool:
+            results = pool.map(fetch_elements, chunks)
 
-    # Flatten the list of results
-    flattened_results = [item for sublist in results for item in sublist]
-    return flattened_results
+        # Flatten the list of results
+        flattened_results = [item for sublist in results for item in sublist]
+        return flattened_results
 
 
