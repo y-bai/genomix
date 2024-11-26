@@ -29,7 +29,7 @@ import json
 import logging
 
 from .constants import GENOMIX_CACHE_DATA_DIR
-from .common import check_file_exists, check_dir_exists, copy_file
+from .common import check_file_exists, copy_file
 
 logger = logging.getLogger(__name__)
 

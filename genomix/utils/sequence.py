@@ -25,7 +25,6 @@
 
 import numpy as np
 from typing import List, Union
-import multiprocessing as mp
 from datasets import Dataset
 
 from .constants import BATCH_NUM_SEQS
@@ -67,25 +66,29 @@ def chunk_sequence(
 
     if isinstance(sequence, str):
         sequence = [sequence]
+    
+    print(f'sequence length: {len(sequence)}')
 
     if not _is_seq_num_large(len(sequence)):
         chunks = []
         for seq in sequence:
             for i in range(0, len(seq), chunk_size - overlap_step): # the last chunk may be smaller than chunk_size
                 chunks.append(seq[i : i + chunk_size])
+                # chunks += seq[i : i + chunk_size]
         return chunks
+    return None
+    # lock = mp.Lock()
+    # with lock:
+    #     # rewrite to allow parallel processing
+    #     def chunk_with_overlap(seq, size, step):
+    #         return [seq[i:i + size] for i in range(0, len(seq), size - step)] 
+    #     # Use multiprocessing Pool to chunk sequence in parallel
+    #     with mp.Pool(processes=n_proc) as pool:
+    #         chunks = pool.starmap(chunk_with_overlap, [(_seq, chunk_size, overlap_step) for _seq in sequence])
 
-    # rewrite to allow parallel processing
-    def chunk_with_overlap(seq, size, step):
-        return [seq[i:i + size] for i in range(0, len(seq), size - step)]
-
-    # Use multiprocessing Pool to chunk sequence in parallel
-    with mp.Pool(processes=n_proc) as pool:
-        chunks = pool.starmap(chunk_with_overlap, [(_seq, chunk_size, overlap_step) for _seq in sequence])
-
-    # Flatten the list of chunks
-    flattened_chunks = [item for sublist in chunks for item in sublist]
-    return flattened_chunks
+    #     # Flatten the list of chunks
+    #     flattened_chunks = [item for sublist in chunks for item in sublist]
+    #     return flattened_chunks
 
 
 def down_sampling(
@@ -189,7 +192,8 @@ def _get_elements_by_indices(
     ['a', 'c']
         
     """
-
+    import multiprocessing as mp
+    
     assert len(lst) >= max(indices), "Index out of range"
 
     if not _is_seq_num_large(len(indices)):

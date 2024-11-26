@@ -72,9 +72,10 @@ _make_dir_if_not_exists(GENOMIX_CACHE_OTHER_DIR)
 LARGE_FILE_SIZE = 1024 * 1024 * 500  # 500MB
 
 # the number of sequences in a batch, NOT used for training model
+# see example at genomix/utils/common.py or genomix/utils/sequence.py
 BATCH_NUM_SEQS = 10000
 
-SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED = "chunked_sequence"
+SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED = "genomix_chk_seq"
 
 
 
