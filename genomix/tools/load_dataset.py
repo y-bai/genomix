@@ -23,12 +23,10 @@
 
 """
 
+import os
 import logging
-from pathlib import Path
-from collections import OrderedDict
 from functools import partial
 from typing import Optional
-import shutil
 
 from datasets import Dataset, DatasetDict, load_from_disk, Features, Value
 
@@ -56,14 +54,16 @@ def write_dataset_to_txt(
     max_num_examples: int=400000,
     chunk_size: int=20000,
     overlap_step: int=0,
-    batch_size: int=5000,
+    map_batch_size: int=5000,
     num_proc: int=16,
     disable_tqdm: bool=False,
 ):
-    """Generate corpus txt file from the input hg dataset.
+    """Convert Huggingface dataset object into txt file.
 
-    When HG dataset is too large and it cosumes too much memory when `load_from_disk`,
-    we first convert the dataset into corpus txt file, and load from the corpus txt.
+    NOTE: We use multiple processors to speed up the huge 
+    text file writing process (when number of sequence > BATCH_NUM_SEQS).
+    However, the order of sequences resulting from this function may not be 
+    the same as the original dataset due to the parallel writing txt file.
 
     Parameters
     ----------
@@ -104,7 +104,7 @@ def write_dataset_to_txt(
         overlap size between two adjacent chunks, by default 200
         - when chunk_size is -1, then overlap_step is not used.
 
-    batch_size : int, optional
+    map_batch_size : int, optional
         batch size for `dataset.map`, by default 5000
 
     num_proc : int, optional
@@ -124,14 +124,14 @@ def write_dataset_to_txt(
         max_num_examples=max_num_examples,
         chunk_size=chunk_size,
         overlap_step=overlap_step,
-        batch_size=batch_size,
+        map_batch_size=map_batch_size,
         num_proc=num_proc,
     )
 
     logger.info(f"writing corpus into file...")
     if check_file_exists(output_txt_fname, _raise_error=False):
         logger.warning(f"File {output_txt_fname} exists, will be overwritten.")
-        shutil.rmtree(output_txt_fname)
+        os.remove(output_txt_fname)
 
     write_txt_file(
         output_txt_fname, 
@@ -152,7 +152,7 @@ def load_dataset_to_dataset(
     max_num_examples: int = 0,  # for downsampling
     chunk_size: int = 20000,    # for trcunking the sequence
     overlap_step: int = 0,
-    batch_size: int = 1000,
+    map_batch_size: int = 1000,
     num_proc: Optional[int] = 16,
 )-> Dataset:
     """ the input HuggingFace datasets, downsampling and chunking the sequence
@@ -184,7 +184,7 @@ def load_dataset_to_dataset(
         the overlap size between two adjacent chunks, by default 0
         - only used when chunk_size > 0
 
-    batch_size : int, optional
+    map_batch_size : int, optional
         the batch size for `dataset.map`, by default 1000
         - only used when chunk_size > 0
 
@@ -239,7 +239,7 @@ def load_dataset_to_dataset(
                 )
             }, 
             batched=True,
-            batch_size=batch_size,
+            batch_size=map_batch_size,
             num_proc=num_proc, 
             remove_columns=ds.column_names,
         )
