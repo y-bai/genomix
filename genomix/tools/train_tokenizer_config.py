@@ -143,6 +143,8 @@ class TrainSPMTokenizerConfig:
         the maximum length of sentence, by default 20000
     num_threads : int, optional
         the number of threads, by default 64
+    train_extremely_large_corpus : bool, optional
+        whether to train extremely large corpus, by default False
     """
     input: str
     vocab_size: int
@@ -160,6 +162,7 @@ class TrainSPMTokenizerConfig:
     max_sentencepiece_length: int = 16
     max_sentence_length: int = 20000
     num_threads: int = 64
+    train_extremely_large_corpus: bool = False
 
     def to_dict(self):
         return self.__dict__
