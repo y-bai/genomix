@@ -236,51 +236,39 @@ def load_dataset_to_dataset(
     
     seq_feat_name = input_corpus_ds_feature
     
-    # enforce to use the first feature as the sequence feature
-    # but this would be 5x slower 
-    # if input_corpus_ds_feature is not None and input_corpus_ds_feature != SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED:
-    #     cols = ds.column_names
-    #     original_feature, will_remove_feature = partition_list(lambda x: x == input_corpus_ds_feature, cols)
-    #     ds = ds.remove_columns(will_remove_feature)
-    #     ds = ds.rename_column(original_feature[0], SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED)
-    #     seq_feat_name = SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED 
-    
     # 1. down sampling
     if max_num_examples > 0:
-        ds = down_sampling(ds, max_num_examples)
+        logger.info(f"down sampling the dataset...")
+        ds = down_sampling(ds, max_num_examples, n_proc=num_proc)
 
     # 2. chunking the sequence
-    # TODO: need test when batch_size > BATCH_NUM_SEQS
-    
     if chunk_size > 0:
-        # chunk_func = partial(
-        #     chunk_sequence, 
-        #     chunk_size=chunk_size, 
-        #     overlap_step=overlap_step, 
-        #     n_proc=num_proc
-        # )
+        chunk_func = partial(
+            chunk_sequence, 
+            chunk_size=chunk_size, 
+            overlap_step=overlap_step, 
+            n_proc=num_proc
+        )
         
-        # os.unlink(entry.name, dir_fd=topfd)
-        # OSError: [Errno 16] Device or resource busy: '.__dpc000000007f148adc00001c0b'
+        # NOTE: `num_proc` in map is the number of processes to be used for parallel processing.
+        # When `batch_size` > the total number of examples, then the averge number of examples over `num_proc`
+        # will be used for each process. 
         ds = ds.map(
-            # lambda examples: {
-            #     SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED: chunk_func(
-            #         examples[input_corpus_ds_feature]
-            #     )
-            # }, 
-
             lambda examples: {
-                SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED: 
+                SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED: chunk_func(
                     examples[input_corpus_ds_feature]
+                )
             }, 
-
             batched=True,
             batch_size=batch_size,
             num_proc=num_proc, 
             remove_columns=ds.column_names,
-            load_from_cache_file=False
         )
         seq_feat_name = SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
-      
+    # NOTE: removing columns rather than the sequence feature will be 5x faster in the downstreaming processing.
+    if input_corpus_ds_feature is not None and input_corpus_ds_feature != SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED:
+        cols = ds.column_names
+        original_feature, will_remove_feature = partition_list(lambda x: x == input_corpus_ds_feature, cols)
+        ds = ds.remove_columns(will_remove_feature)
     return ds, seq_feat_name
 
