@@ -28,12 +28,14 @@ from pathlib import Path
 from collections import OrderedDict
 from functools import partial
 from typing import Optional
+import shutil
 
 from datasets import Dataset, DatasetDict, load_from_disk, Features, Value
 
 from ..utils import (
     partition_list,
     check_dir_exists,
+    check_file_exists,
     copy_file, 
     write_txt_file,
     down_sampling,
@@ -50,13 +52,14 @@ logger = logging.getLogger(__name__)
 def write_dataset_to_txt(
     input_ds_fname: str,
     output_txt_fname: str,
-    ds_dict_key: str='train',
-    ds_feature_name: str='sequence',
-    max_num_examples_per_dataset: int=400000,
+    *,
+    input_ds_key: str='train',
+    input_ds_feature: str='sequence',
+    max_num_examples: int=400000,
     chunk_size: int=20000,
     overlap_step: int=0,
     batch_size: int=5000,
-    n_proc: int=16,
+    num_proc: int=16,
     disable_tqdm: bool=False,
     to_cache: bool = True,
 ):
@@ -76,25 +79,25 @@ def write_dataset_to_txt(
     output_txt_fname : str,
         output corpus txt file name
     
-    ds_dict_key : str,
+    input_ds_key : str,
         key of the dataset to be used, by default 'train'
         - Could be 'train', 'validation', 'test'
         - This is for the case that the input dataset contains multiple splits, 
             that is, the input dataset is a DatasetDict object.
         - It is not used if the input dataset is a Dataset object.
     
-    ds_feature_name : str,
+    input_ds_feature : str,
         feature name of the dataset to be used, by default 'sequence'
         - This is for the case that the input dataset contains multiple features,
             and the feature contains the sequence data.
 
-    max_num_examples_per_dataset : int, optional
+    max_num_examples : int, optional
         number of downsampled examples, by default 400000
         - 0: no downsampling
         - This is used for downsampling the training corpus when the corpus is too large.
         - NOTE: when `input_ds_names` is list, the down sampling is applied to each dataset.
           As a result, the real number of examples in the output corpus could be 
-        `max_num_examples_per_dataset * len(input_ds_names)`.
+        `max_num_examples * len(input_ds_names)`.
 
     chunk_size : int, optional
         size of each chunk, by default 20000
@@ -107,7 +110,7 @@ def write_dataset_to_txt(
     batch_size : int, optional
         batch size for `dataset.map`, by default 5000
 
-    n_proc : int, optional
+    num_proc : int, optional
         number of processors to be used for parallel processing, by default 16
     
     disable_tqdm : bool, optional
@@ -123,15 +126,17 @@ def write_dataset_to_txt(
     if to_cache:
         meta_info = OrderedDict(
             input_ds_fname=Path(input_ds_fname).name,
-            ds_dict_key=ds_dict_key,
-            ds_feature_name=ds_feature_name,
-            max_num_examples_per_dataset=max_num_examples_per_dataset,
+            input_ds_key=input_ds_key,
+            input_ds_feature=input_ds_feature,
+            max_num_examples=max_num_examples,
             chunk_size=chunk_size,
             overlap_step=overlap_step,
+            num_proc=num_proc,
+            disable_tqdm=disable_tqdm,
+            to_cache=to_cache
         )
         
         cache_fname, cache_fsize = _find_from_cache(
-            Path(output_txt_fname).name,
             file_meta = meta_info,
         )
 
@@ -142,21 +147,25 @@ def write_dataset_to_txt(
     
     _ds, _seq_feat_name = load_dataset_to_dataset(
         input_ds_fname,
-        ds_dict_key, 
-        ds_feature_name,
-        max_num_examples=max_num_examples_per_dataset,
+        input_ds_key=input_ds_key, 
+        input_ds_feature=input_ds_feature,
+        max_num_examples=max_num_examples,
         chunk_size=chunk_size,
         overlap_step=overlap_step,
         batch_size=batch_size,
-        num_proc=n_proc,
+        num_proc=num_proc,
     )
 
     logger.info(f"writing corpus into file...")
+    if check_file_exists(output_txt_fname, _raise_error=False):
+        logger.warning(f"File {output_txt_fname} exists, will be overwritten.")
+        shutil.rmtree(output_txt_fname)
+        
     write_txt_file(
         output_txt_fname, 
         _ds[_seq_feat_name],
         mode='a', 
-        n_proc=n_proc, 
+        n_proc=num_proc, 
         disable_tqdm=disable_tqdm
     )
     if to_cache:
@@ -168,10 +177,10 @@ def write_dataset_to_txt(
 
 
 def load_dataset_to_dataset(
-    input_corpus_name: str, 
-    input_corpus_ds_key: str, 
-    input_corpus_ds_feature: str,
+    input_ds_name: str, 
     *,
+    input_ds_key: str = 'train', 
+    input_ds_feature: str = 'sequence',
     max_num_examples: int = 0,  # for downsampling
     chunk_size: int = 20000,    # for trcunking the sequence
     overlap_step: int = 0,
@@ -183,14 +192,14 @@ def load_dataset_to_dataset(
 
     Parameters
     ----------
-    input_corpus_name : str
+    input_ds_name : str
         input dataset name, such as '/path/to/dataset_directory'
-    input_corpus_ds_key : str, 
+    input_ds_key : str, 
         when the input dataset is DatasetDict object, 
         then specify the key to be used for training tokenizer, by default 'train'.
         - This is for the case that the input dataset contains multiple splits,
         - e.g., it could be 'train', 'validation', 'test'
-    input_corpus_ds_feature : str, optional
+    input_ds_feature : str, optional
         the feature name of the input dataset that saves the sequence, by default 'sequence'
 
     max_num_examples : int, optional
@@ -222,19 +231,19 @@ def load_dataset_to_dataset(
         processed dataset with downsampled, chunked sequence, depending on the input parameters
     """
 
-    assert isinstance(input_corpus_name, str), "paramter input_corpus_name should be a HG dataset path"
-    check_dir_exists(input_corpus_name)
+    assert isinstance(input_ds_name, str), "paramter input_ds_name should be a HG dataset path"
+    check_dir_exists(input_ds_name)
 
     # 0. load the input datasets
     # NOTE: 
     # When reading dataset, a cache will be generated to the ~/. cache/huggingface/datasets directory
     # When using .map and .filter operations, runtime cache will be generated to the /tmp/hf_datasets-* directory
-    ds = load_from_disk(input_corpus_name)
+    ds = load_from_disk(input_ds_name)
 
     if isinstance(ds, DatasetDict):
-        ds = ds[input_corpus_ds_key]
+        ds = ds[input_ds_key]
     
-    seq_feat_name = input_corpus_ds_feature
+    seq_feat_name = input_ds_feature
     
     # 1. down sampling
     if max_num_examples > 0:
@@ -256,7 +265,7 @@ def load_dataset_to_dataset(
         ds = ds.map(
             lambda examples: {
                 SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED: chunk_func(
-                    examples[input_corpus_ds_feature]
+                    examples[input_ds_feature]
                 )
             }, 
             batched=True,
@@ -266,9 +275,9 @@ def load_dataset_to_dataset(
         )
         seq_feat_name = SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
     # NOTE: removing columns rather than the sequence feature will be 5x faster in the downstreaming processing.
-    if input_corpus_ds_feature is not None and input_corpus_ds_feature != SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED:
+    if seq_feat_name is not None and seq_feat_name != SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED:
         cols = ds.column_names
-        original_feature, will_remove_feature = partition_list(lambda x: x == input_corpus_ds_feature, cols)
+        original_feature, will_remove_feature = partition_list(lambda x: x == input_ds_feature, cols)
         ds = ds.remove_columns(will_remove_feature)
     return ds, seq_feat_name
 
