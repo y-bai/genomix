@@ -36,13 +36,11 @@ from ..utils import (
     partition_list,
     check_dir_exists,
     check_file_exists,
-    copy_file, 
     write_txt_file,
     down_sampling,
     chunk_sequence,
 )
 
-from ..utils._cache import _find_from_cache, _write_to_cache
 from ..utils.constants import (
     SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED
 )
@@ -61,12 +59,11 @@ def write_dataset_to_txt(
     batch_size: int=5000,
     num_proc: int=16,
     disable_tqdm: bool=False,
-    to_cache: bool = True,
 ):
     """Generate corpus txt file from the input hg dataset.
 
     When HG dataset is too large and it cosumes too much memory when `load_from_disk`,
-    we should first convert the dataset into corpus txt file, and then load the corpus txt file.
+    we first convert the dataset into corpus txt file, and load from the corpus txt.
 
     Parameters
     ----------
@@ -115,35 +112,10 @@ def write_dataset_to_txt(
     
     disable_tqdm : bool, optional
         disable tqdm, by default False
-    
-    to_cache: bool, optional
-        whether to cache the output file, by default True
 
     """
 
     check_dir_exists(input_ds_fname)
-
-    if to_cache:
-        meta_info = OrderedDict(
-            input_ds_fname=Path(input_ds_fname).name,
-            input_ds_key=input_ds_key,
-            input_ds_feature=input_ds_feature,
-            max_num_examples=max_num_examples,
-            chunk_size=chunk_size,
-            overlap_step=overlap_step,
-            num_proc=num_proc,
-            disable_tqdm=disable_tqdm,
-            to_cache=to_cache
-        )
-        
-        cache_fname, cache_fsize = _find_from_cache(
-            file_meta = meta_info,
-        )
-
-        if cache_fname is not None and cache_fsize > 0:
-            copy_file(cache_fname, output_txt_fname)
-            logger.info(f"corpus txt file saved at: {output_txt_fname}")
-            return
     
     _ds, _seq_feat_name = load_dataset_to_dataset(
         input_ds_fname,
@@ -160,19 +132,15 @@ def write_dataset_to_txt(
     if check_file_exists(output_txt_fname, _raise_error=False):
         logger.warning(f"File {output_txt_fname} exists, will be overwritten.")
         shutil.rmtree(output_txt_fname)
-        
+
     write_txt_file(
         output_txt_fname, 
         _ds[_seq_feat_name],
-        mode='a', 
         n_proc=num_proc, 
-        disable_tqdm=disable_tqdm
+        disable_tqdm=disable_tqdm,
     )
-    if to_cache:
-        cached = _write_to_cache(output_txt_fname, file_meta=meta_info)
-        if not cached:
-            logger.warning(f"something wrong when caching the file.")
 
+    # TODO: cache the output file
     logger.info(f"corpus txt file saved at: {output_txt_fname}")
 
 
@@ -262,6 +230,8 @@ def load_dataset_to_dataset(
         # NOTE: `num_proc` in map is the number of processes to be used for parallel processing.
         # When `batch_size` > the total number of examples, then the averge number of examples over `num_proc`
         # will be used for each process. 
+        # TMPDIR for caching used by map function must be `/tmp`, otherwise, it will raise error:
+        #   - OSError: [Errno 16] Device or resource busy: '.__dpc000000007f6b48cc00007b76'
         ds = ds.map(
             lambda examples: {
                 SEQENCE_FEATURE_NAME_IN_DATASET_CHUNKED: chunk_func(
