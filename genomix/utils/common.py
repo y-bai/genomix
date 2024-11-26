@@ -26,12 +26,12 @@
 from collections import OrderedDict
 import os
 import json
-import shutil
 from itertools import tee, filterfalse
 from typing import List
 import multiprocessing as mp
 from tqdm import tqdm
 import logging
+import shutil
 
 from .constants import LARGE_FILE_SIZE, BATCH_NUM_SEQS
 
@@ -85,7 +85,11 @@ def write_json_file(f_name, data, indent=4):
         json.dump(data, f, indent=indent)
 
 
-def read_txt_file(f_name, n_proc: int=16):
+# TODO: add gzip support
+def read_txt_file(
+        f_name, 
+        n_proc: int=16, 
+    ):
     """Read text file """
     
     check_file_exists(f_name)
@@ -104,40 +108,36 @@ def write_txt_file(
         data: List[str], 
         n_proc: int=16, 
         disable_tqdm: bool=False,
-        batch_size: int = BATCH_NUM_SEQS):
+    ):
     """Write a list of strings to a text file."""
 
     if len(data) <= BATCH_NUM_SEQS:
         _write_small_txt(
             f_name, data, 
-            mode='a',
+            mode='w',
             disable_tqdm=disable_tqdm
         )
     else:
         _parallel_write_txt(
             f_name, 
             data, 
-            batch_size=batch_size, 
+            batch_size=BATCH_NUM_SEQS, 
             n_proc=n_proc, 
             disable_tqdm=disable_tqdm
         )
 
 
-def copy_file(src_file, dst_file):
+def copy_txt_file(src_file, dst_file):
     """Copy a txt file from source to destination."""
     if os.stat(src_file).st_size <= LARGE_FILE_SIZE:
         shutil.copy(src_file, dst_file)
     else:
-        with open(src_file, "r") as src_f, open(dst_file, "w") as dst_f:
+        with open(src_file, "rt") as src_f, open(dst_file, "wt") as dst_f:
             while True:
                 chunk = src_f.read(BATCH_NUM_SEQS)
                 if not chunk:
                     break
                 dst_f.write(chunk)
-
-            # using shutil.copyfileobj
-            # file mode must be 'b' (binary)
-            # shutil.copyfileobj(src_f, dst_f, length=LARGE_FILE_SIZE)
 
 
 def partition_list(condition, iterable_input):
@@ -162,10 +162,10 @@ def partition_list(condition, iterable_input):
     t1, t2 = tee(iterable_input)
     return list(filter(condition, t1)), list(filterfalse(condition, t2))
 
-
 def _read_samll_txt(f_name):
     data = []
     with open(f_name, "rt", encoding="utf-8") as f:
+        # read line by line
         for line in f:
             data.append(line.strip('\n')) # remove '\n' at the end
     return data
@@ -176,7 +176,7 @@ def _write_small_txt(f_name, data, mode: str = 'w', disable_tqdm: bool=False):
         # write a list of lines, each line contains a '\n' at the end
         for _seq in tqdm(data, desc="writing file", disable=disable_tqdm):
             f.write(_seq + '\n')
- 
+
 def _write_chunk_txt(
         f_name: str, 
         batch: List[str], 
@@ -186,7 +186,7 @@ def _write_chunk_txt(
     ):
     """Write a chunk of lines to a file."""
 
-    with open(f_name, mode) as f:
+    with open(f_name, mode, encoding='utf-8') as f:
         # write a list of lines, each line contains a '\n' at the end
         for _seq in tqdm(batch, desc=f"{ith_batch}th batch writing", disable=disable_tqdm):
             f.write(_seq + '\n')

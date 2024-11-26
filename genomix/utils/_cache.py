@@ -27,9 +27,11 @@ import os
 from collections import OrderedDict
 import json
 import logging
+import gzip
+import shutil
 
-from .constants import GENOMIX_CACHE_DATA_DIR
-from .common import check_file_exists, check_dir_exists, copy_file
+from .constants import GENOMIX_CACHE_DATA_DIR, LARGE_FILE_SIZE
+from .common import check_file_exists, check_dir_exists
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ def _write_to_cache(
     file_meta: OrderedDict=None, 
     cache_dir:str=None,
 ):
-    """write file to cache
+    """write file to cache as gzip file
 
     Parameters
     ----------
@@ -97,9 +99,12 @@ def _write_to_cache(
         cache_dir = GENOMIX_CACHE_DATA_DIR
     
     _cache_fname = _file_name(cache_dir, file_meta)
-    copy_file(fname_to_cache, _cache_fname)
 
-    return True
+    # write file into cache as gzip file
+    with open(fname_to_cache, 'rb') as f_in, gzip.open(_cache_fname, 'wb') as f_out:
+        # shutil.copyfileobj(f_in, f_out, length=LARGE_FILE_SIZE)
+        _write_file_by_buffer(f_in, f_out, buffer_size=LARGE_FILE_SIZE)
+    
 
 def _md5(data_meta: str):
     import hashlib
@@ -116,3 +121,20 @@ def _file_name(cache_dir: str, file_meta: OrderedDict=None):
     cache_full_dir = os.path.join(cache_dir, meta_dir)
     check_dir_exists(cache_full_dir, create=True)
     return os.path.join(cache_full_dir, f"{meta_dir}")
+
+
+def _resolve_cache_file(src_cache_file, dst_file):
+    """Copy a txt file from source to destination."""
+
+    # src_cache_file: gzipped file
+    with gzip.open(src_cache_file, "rb") as src_f, open(dst_file, "wb") as dst_f:
+        _write_file_by_buffer(src_f, dst_f, buffer_size=LARGE_FILE_SIZE)
+
+
+def _write_file_by_buffer(f_in, f_out, buffer_size):
+    while True:
+        block = f_in.read(buffer_size)
+        if not block:
+            break
+        f_out.write(block)
+    
