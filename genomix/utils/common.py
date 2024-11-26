@@ -180,9 +180,9 @@ def _write_small_txt(f_name, data, mode: str = 'w', disable_tqdm: bool=False):
 def _write_chunk_txt(
         f_name: str, 
         batch: List[str], 
-        ith_batch: int = 0, 
-        mode: str = 'a', 
-        disable_tqdm: bool = False
+        ith_batch: int, 
+        mode: str, 
+        disable_tqdm: bool
     ):
     """Write a chunk of lines to a file."""
 
@@ -190,6 +190,9 @@ def _write_chunk_txt(
         # write a list of lines, each line contains a '\n' at the end
         for _seq in tqdm(batch, desc=f"{ith_batch}th batch writing", disable=disable_tqdm):
             f.write(_seq + '\n')
+
+def _write_chunk_helper(args):
+    return _write_chunk_txt(*args)
 
 def _parallel_write_txt(
         file_name: str, 
@@ -209,6 +212,12 @@ def _parallel_write_txt(
             _write_chunk_txt, 
             [(file_name, batch, i, 'a', disable_tqdm) for i, batch in enumerate(batchs)]
         )
+        # for result in pool.imap(
+        #     _write_chunk_helper, 
+        #     [(file_name, batch, i, 'a', disable_tqdm) for i, batch in enumerate(batchs)]
+        # ):
+        #     pass # The function _write_chunk_txt handles the writing
+
 
 def _read_chunk_txt(file_name: str, start_line: int, num_lines: int) -> List[str]:
     """Read a chunk of lines from a file."""
