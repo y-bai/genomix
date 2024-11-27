@@ -1,0 +1,24 @@
+11/26/2024 10:42:58 - INFO - genomix.tools.load_dataset - down sampling the dataset...
+n_total_examples: 22
+sequence length: 2
+sequence length: 1
+sequence length: 2
+sequence length: 1
+11/26/2024 10:43:00 - INFO - __main__ - After process: 
+Dataset({
+    features: ['genomix_chk_seq'],
+    num_rows: 415302
+})
+11/26/2024 10:43:00 - INFO - __main__ - Process params: 
+{
+    "input_corpus_name": "/home/share/huadjyin/home/baiyong01/projects/biomlm/biomlm/datasets/raw_dataset_chm13_t2t",
+    "input_corpus_ds_key": "train",
+    "input_corpus_ds_feature": "sequence",
+    "max_num_examples": 6,
+    "chunk_size": 2000,
+    "overlap_step": 0,
+    "batch_size": 2,
+    "num_proc": 2
+}
+11/26/2024 10:43:00 - INFO - __main__ - Memory usage: 440.88 MB
+11/26/2024 10:43:00 - INFO - __main__ - Time cost: 1.73 s

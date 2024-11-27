@@ -1,0 +1,33 @@
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 1
+sequence length: 2
+sequence length: 2
+sequence length: 2
+sequence length: 2
+sequence length: 2
+11/25/2024 13:21:15 - INFO - __main__ - After process: 
+(Dataset({
+    features: ['genomix_chk_seq'],
+    num_rows: 3003490546
+}), 'genomix_chk_seq')
+11/25/2024 13:21:15 - INFO - __main__ - Process params: 
+{
+    "input_corpus_name": "/home/share/huadjyin/home/baiyong01/projects/biomlm/biomlm/datasets/raw_dataset_chm13_t2t",
+    "input_corpus_ds_key": "train",
+    "input_corpus_ds_feature": "sequence",
+    "max_num_examples": 0,
+    "chunk_size": 20000,
+    "overlap_step": 0,
+    "batch_size": 100,
+    "num_proc": 16
+}
+11/25/2024 13:21:15 - INFO - __main__ - Memory usage: 20127.88 MB
+11/25/2024 13:21:15 - INFO - __main__ - Time cost: 130.86 s

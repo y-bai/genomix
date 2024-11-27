@@ -1,0 +1,20 @@
+11/26/2024 15:17:21 - INFO - genomix.tools.load_dataset - down sampling the dataset...
+11/26/2024 15:17:22 - INFO - genomix.tools.load_dataset - writing corpus into file...
+11/26/2024 15:17:22 - WARNING - genomix.tools.load_dataset - File /home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata.txt exists, will be overwritten.
+11/26/2024 15:17:22 - INFO - genomix.utils.common - writing 3 batchs to /home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata.txt
+11/26/2024 15:17:23 - INFO - genomix.tools.load_dataset - corpus txt file saved at: /home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata.txt
+11/26/2024 15:17:23 - INFO - __main__ - Process params: 
+{
+    "input_ds_fname": "/home/share/huadjyin/home/baiyong01/projects/biomlm/biomlm/datasets/raw_dataset_chm13_t2t",
+    "output_txt_fname": "/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata.txt",
+    "input_ds_key": "train",
+    "input_ds_feature": "sequence",
+    "max_num_examples": 4,
+    "chunk_size": 20000,
+    "overlap_step": 0,
+    "batch_size": 1000,
+    "num_proc": 4,
+    "disable_tqdm": false
+}
+11/26/2024 15:17:23 - INFO - __main__ - Memory usage: 596.50 MB
+11/26/2024 15:17:23 - INFO - __main__ - Time cost: 2.01 s

@@ -1,0 +1,4 @@
+11/26/2024 16:43:10 - INFO - genomix.tools.train_tokenizer - Training UNIGRAM tokenizer starts...
+
+
+11/26/2024 16:43:10 - INFO - genomix.tools.train_tokenizer - UNIGRAM finished, saved vocab at: /home/share/huadjyin/home/baiyong01/projects/genomix/tmp/vocab

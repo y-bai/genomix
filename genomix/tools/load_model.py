@@ -30,9 +30,6 @@ from transformers.utils.hub import cached_file
 
 from ..utils import read_json
 
-def model_size(model):
-    return sum(t.numel() for t in model.parameters())
-
 # adapted from from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
 def load_config_hf(
         model_name_or_dict, 

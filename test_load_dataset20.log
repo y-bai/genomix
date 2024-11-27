@@ -1,0 +1,5 @@
+11/26/2024 16:42:04 - INFO - genomix.tools.train_tokenizer - Training BPE tokenizer starts...
+
+
+
+11/26/2024 16:42:04 - INFO - genomix.tools.train_tokenizer - BPE finished, saved vocab at: /home/share/huadjyin/home/baiyong01/projects/genomix/tmp/vocab
