@@ -53,20 +53,27 @@ class GenoMixGeneEmbedding(nn.Module):
     def __init__(
         self,
         vocab_size: int,
-        d_model: int, 
+        d_model: int,
+        fusion_type='add', 
         **kwargs
     ):
         super().__init__(**kwargs)
+        assert fusion_type in ['add', 'concat'], f"Unknown fusion type: {fusion_type}"
+
+        self.fusion_type = fusion_type
+
         self.gene_id_embedding = nn.Embedding(vocab_size, d_model)
         self.gene_val_embedding = FloatValueEmbedding(d_model)
 
-        self.fusion = nn.Linear(2*d_model, d_model)
+        if fusion_type == 'concat':
+            self.fusion = nn.Linear(2*d_model, d_model, bias=False)
+        else:
+            self.fusion = nn.Identity()
 
     def forward(
         self, 
         gene_id, 
         gene_val,
-        fusion_type='add'
     ):
         """embedding gene_id and gene_val, and fusion them together
 
@@ -89,21 +96,19 @@ class GenoMixGeneEmbedding(nn.Module):
         ValueError
             Unknown fusion type
         """
-        if fusion_type == 'concat':
-            return self.fusion(torch.cat(
+        return self.fusion(
+            torch.cat(
                 [
                     self.gene_id_embedding(gene_id),
                     self.gene_val_embedding(gene_val)
                 ],
                 dim=-1
-            ))
-        elif fusion_type == 'add':
-            return (
+            ) if self.fusion_type == 'concat' else (
                 self.gene_id_embedding(gene_id) + 
                 self.gene_val_embedding(gene_val)
             )
-        else:
-            raise ValueError(f"Unknown fusion type: {fusion_type}")
+        )
+
     
 
 
