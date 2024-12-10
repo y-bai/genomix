@@ -85,7 +85,7 @@ def test_load_dataset():
         max_num_examples=params['max_num_examples'],
         chunk_size=params['chunk_size'],
         overlap_step=params['overlap_step'],
-        map_batch_size=params['batch_size'],
+        map_batch_size=params['map_batch_size'],
         num_proc=params['num_proc']
     )
     end_time = time.time()
@@ -106,10 +106,10 @@ def test_write_dataset_to_text():
 
         input_ds_key = "train",
         input_ds_feature = "sequence",
-        max_num_examples = 4,  # for downsampling
+        max_num_examples = 0,  # for downsampling
         chunk_size = 20000,
         overlap_step = 0,
-        batch_size =1000,
+        map_batch_size =1000,
         num_proc = 4, # reduce the number of processes to reduce the memory usage
         disable_tqdm = False,
     )
@@ -125,7 +125,7 @@ def test_write_dataset_to_text():
         max_num_examples=params['max_num_examples'],
         chunk_size=params['chunk_size'],
         overlap_step=params['overlap_step'],
-        map_batch_size=params['batch_size'],
+        map_batch_size=params['map_batch_size'],
         num_proc=params['num_proc'],
         disable_tqdm = params['disable_tqdm'],
     )
@@ -151,50 +151,3 @@ if __name__ == '__main__':
     test_write_dataset_to_text()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-# from datasets import Dataset, DatasetDict
-
-
-
-# def gen_demo_data():
-#     yield {"sequence": "GACCCTAAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAAACCCT", "chr": "1"}
-#     yield {"sequence": "ACCCTCACCCTCACCCTCACCCTCACCCTCACCCTCACCCTCACCCTAACCCTAACCCTAACCC", "chr": "1"}
-#     yield {"sequence": "ACCCTCACCCTCAGGCTCACCCTCACCCTCACCCTCACCCTCACCCTAACCCTAACCCTAACCC", "chr": "1"}
-#     yield {"sequence": "ACCCTCACCCTCAGGCTCACCCTCACCCTCACCCTCACCCTCACCCTAACCCTAATTCTAACCC", "chr": "1"}
-#     yield {"sequence": "ACCCTCACCCTCAGGCTCACCCTCACCCTCGGCCTCACCCTCACCCTAACCCTAATTCTAACCC", "chr": "1"}
-
-# def build_demo_dataset():
-#     ds1 = Dataset.from_generator(gen_demo_data)
-#     ds2 = Dataset.from_generator(gen_demo_data)
-
-#     ds = DatasetDict()
-#     ds["train"] = ds1
-#     ds["validation"] = ds2
-#     ds.save_to_disk("/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata")
-
-# if __name__ == '__main__':
-#     input_sequence = [
-#         'CACCCTAAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAAACCCT', 
-#         'ACCCTCACCCTCACCCTCACCCTCACCCTCACCCTCACCCTCACCCTAACCCTAACCCTAACCC'
-#     ]
-#     # build_demo_dataset()
-
-
-#     the
-
-# from genomix.tools import TrainBPETokenizerConfig
-# if __name__ == '__main__':
-#     bpe_train_config = TrainBPETokenizerConfig()
-#     bpe_train_config.vocab_size = 1000
-#     print(bpe_train_config.to_dict())
