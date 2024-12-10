@@ -1,5 +1,5 @@
 #!/bin/bash
-# dsub -A root.project.P24Z10200N0985 -R 'cpu=50;gpu=0;mem=160000' -eo %J.%I.err.log -oo %J.%I.out.log -s run.sh
+# dsub -A root.project.P24Z10200N0978 -R 'cpu=50;gpu=0;mem=160000' -eo %J.%I.err.log -oo %J.%I.out.log -s run.sh
 
 source /home/HPCBase/tools/module-5.2.0/init/profile.sh
 module use /home/HPCBase/modulefiles/
@@ -20,4 +20,4 @@ MASTER_IP=`head -n 1 ${NODEFILE}`
 echo $MASTER_IP
 rm $NODEFILE
 
-python 00_func_test.py
+python 00_write_txt_test.py
