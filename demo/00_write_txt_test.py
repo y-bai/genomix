@@ -110,7 +110,7 @@ def test_write_dataset_to_text():
         chunk_size = 20000,
         overlap_step = 0,
         batch_size =1000,
-        num_proc = 4, # reduce the number of processes reduce the memory usage
+        num_proc = 4, # reduce the number of processes to reduce the memory usage
         disable_tqdm = False,
     )
 
