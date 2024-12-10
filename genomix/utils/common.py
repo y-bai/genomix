@@ -110,8 +110,9 @@ def write_txt_file(
         disable_tqdm: bool=False,
     ):
     """Write a list of strings to a text file."""
-
-    if len(data) <= BATCH_NUM_SEQS:
+    len_data = len(data)
+    logger.info(f"writing {len_data} sequences to {f_name}")
+    if len_data <= BATCH_NUM_SEQS:
         _write_small_txt(
             f_name, data, 
             mode='w',
@@ -191,8 +192,6 @@ def _write_chunk_txt(
         for _seq in tqdm(batch, desc=f"{ith_batch}th batch writing", disable=disable_tqdm):
             f.write(_seq + '\n')
 
-def _write_chunk_helper(args):
-    return _write_chunk_txt(*args)
 
 def _parallel_write_txt(
         file_name: str, 
@@ -204,13 +203,13 @@ def _parallel_write_txt(
     """Write a list of strings to a text file in parallel."""
     # Split data into chunks
     batchs = [data[i:i + batch_size] for i in range(0, len(data), batch_size)]
-    logger.info(f"writing {len(batchs)} batchs to {file_name}")
+    # batches[0] = batch_size  * len(data[0])
 
     # Use multiprocessing Pool to write chunks in parallel
     with mp.Pool(processes=n_proc) as pool:
         pool.starmap(
             _write_chunk_txt, 
-            [(file_name, batch, i, 'a', disable_tqdm) for i, batch in enumerate(batchs)]
+            [(file_name, batch, i, 'a+', disable_tqdm) for i, batch in enumerate(batchs)]
         )
         # for result in pool.imap(
         #     _write_chunk_helper, 
