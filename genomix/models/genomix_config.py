@@ -107,16 +107,18 @@ class GenoMixMamba2Config(PretrainedConfig):
             "initializer_range": 0.1,           # default 0.2 in mamba2, no need to change
             "rescale_prenorm_residual": False,  # default False in mamba2, no need to change
         },
+        
         # for computation improvement
         residual_in_fp32: bool = True,  # default True in mamba2, no need to change
         fused_add_norm: bool = True,    # default True in mamba2, no need to change
-        activation: str = "silu",       # default "silu" in mamba2, no need to change
+        # activation: str = "silu",       # default "silu" in mamba2, no need to change
 
         # only for mixer
         rms_norm: bool = True,          # default True in mamba2, no need to change
         norm_epsilon: float = 1e-5,     # default 1e-5 in mamba2, no need to change
 
         # for float value embedding
+        use_tabular_embedding: bool = False,  
         input_embedding_cfg={
             "use_tabular_embedding": False, 
             "fusion_type": "add",
@@ -222,18 +224,17 @@ class GenoMixMamba2Config(PretrainedConfig):
         fused_add_norm : bool, optional
             add + norm then mixer, only for performance improvemant, by default True
 
-        activation : str, optional
-            the activation function, by default "silu"
-
         rms_norm : bool, optional
             If using the RMSNorm, by default True
 
         norm_epsilon : float, optional
             norm epsilon, by default 1e-5
 
+        use_tabular_embedding : bool, optional
+            whether or not using tabular embedding, by default False
+
         input_embedding_cfg : dict, optional
-            If using float value embedding, 
-            If not None, then use float value embedding, by default 
+            by default 
             {
                 "use_tabular_embedding": False, 
                 "fusion_type": "add",
@@ -265,11 +266,11 @@ class GenoMixMamba2Config(PretrainedConfig):
 
         self.residual_in_fp32 = residual_in_fp32
         self.fused_add_norm = fused_add_norm
-        self.activation = activation
 
         self.rms_norm = rms_norm
         self.norm_epsilon = norm_epsilon
 
+        self.use_tabular_embedding = use_tabular_embedding
         self.input_embedding_cfg = input_embedding_cfg
         self.tie_word_embeddings = tie_word_embeddings
 
