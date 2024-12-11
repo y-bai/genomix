@@ -97,6 +97,7 @@ class GenoMixMamba2Block(nn.Module):
         ssm_cfg={},
         attn_enable=False,
         attn_cfg={},
+        mlp_attn_only=True,
         moe_enable=False,
         moe_cfg={},
         d_intermediate=0,           # whether MLP is used
@@ -139,6 +140,9 @@ class GenoMixMamba2Block(nn.Module):
             MHA parameters, by default {}
             if attn_cfg = {}, then use default parameters for MHA
             see: mamba_ssm.modules.mha.MHA
+        
+        mlp_attn_only : bool, optional
+            indicating whether using GatedMLP(feedforward) layer only when using attention layer, by default True
         
         moe_enable : bool, optional
             indicating whether using MoE layer, by default False
@@ -192,6 +196,8 @@ class GenoMixMamba2Block(nn.Module):
             # mlp_layer = nn.Identity
             self.mlp = None
         else:
+            if mlp_attn_only and (not isinstance(self.mixer, MHA)):
+                self.mlp = None
             # NOTE: In original code, the slef.norm = norm_cls, 
             # and slef.norm2 = norm_cls as well. This may result in the same norm layer.
             # ie., self.norm = self.norm2. 
@@ -199,17 +205,18 @@ class GenoMixMamba2Block(nn.Module):
             # https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/block.py#L29-L33
             # 
             # But here, we create two different norm layers.
-            self.norm2 = (nn.LayerNorm if not rms_norm else RMSNorm)(
-                d_model,
-                eps=norm_epsilon, 
-                **factory_kwargs
-            )
-            self.mlp = GatedMLP(
-                d_model,
-                hidden_features=d_intermediate, 
-                out_features=d_model, 
-                **factory_kwargs
-            )
+            else:
+                self.norm2 = (nn.LayerNorm if not rms_norm else RMSNorm)(
+                    d_model,
+                    eps=norm_epsilon, 
+                    **factory_kwargs
+                )
+                self.mlp = GatedMLP(
+                    d_model,
+                    hidden_features=d_intermediate, 
+                    out_features=d_model, 
+                    **factory_kwargs
+                )
         
         if self.fused_add_norm:
             assert RMSNorm is not None, "RMSNorm import fails"
@@ -265,6 +272,7 @@ class GenoMixMamba2Block(nn.Module):
                     eps=self.norm2.eps,
                     is_rms_norm=isinstance(self.norm2, RMSNorm)
                 )
+
             hidden_states = self.mlp(hidden_states)
 
         return hidden_states, residual
