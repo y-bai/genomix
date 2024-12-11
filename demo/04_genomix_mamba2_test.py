@@ -25,7 +25,7 @@
 
 import sys
 import logging
-
+import numpy as np
 from transformers import Mamba2Config
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -48,6 +48,14 @@ def test_genomix_mamba2_model():
     attn_num_heads = config.attn_cfg['num_heads']
     config.attn_cfg['head_dim'] = d_model // attn_num_heads
     config.attn_cfg['rotary_emb_dim'] = d_model // attn_num_heads
+
+    # add attn layers 
+    # each with 8 mamba2 layers interval
+    n_layers = config.n_layers
+    interval = 8
+    idx1 = np.arange(0, n_layers, interval)[1:]
+    idx2 = np.arange(1, len(idx1)+1)
+    config.attn_layer_idx = (idx1 + idx2).tolist()
 
     logger.info(f"config: \n{config}")
 
