@@ -46,8 +46,9 @@ class GenoMixMamba2Config(PretrainedConfig):
         self,
         vocab_size: int = 16,
         d_model: int = 256,
-        d_intermediate: int=256*2+128,  # MLP hidden size
-        n_layers: int=32,
+        d_intermediate: int=256*3,  # MLP hidden size
+        mlp_attn_only: bool = True, # If d_intermediate > 0, use GatedMLP(feedforward) layer only when using attention layer
+        n_layers: int=16,
 
         pad_token_id=2, # pad_token_id=eos_token_id
         bos_token_id=0,
@@ -112,7 +113,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         moe_cfg=None,
         initializer_cfg={
             "initializer_range": 0.1,           # default 0.2 in mamba2, no need to change
-            "rescale_prenorm_residual": False,  # default False in mamba2, no need to change
+            "rescale_prenorm_residual": True,  # default False in mamba2, no need to change
         },
         
         # for computation improvement
@@ -140,6 +141,9 @@ class GenoMixMamba2Config(PretrainedConfig):
         d_intermediate : int, optional
             the hidden size of MLP, by default 0
             - If 0, no MLP is used
+        
+        mlp_attn_only: bool, optional
+            If using GatedMLP(feedforward) layer only when using attention layer when d_intermediate>0, by default True
 
         n_layers : int, optional
             the number of Mamba2 blocks, by default 32
@@ -170,13 +174,13 @@ class GenoMixMamba2Config(PretrainedConfig):
                 "use_tabular_embedding": False, 
                 "fusion_type": "add",
             }
-        
+
         ssm_cfg : dict, optional
             the parameters for Mamba2 layer, by default
             {
                  "d_state": 64,          # SSM state expansion factor, (`N` in [1] Algorithm 2), typically 64 or 128 
                 # https://github.com/state-spaces/mamba/issues/439
-                "headdim": 64,          # must d_model/headdim%8==0, default 64 in mamba2，should be small
+                "headdim": 64,          # must d_model/headdim%8==0, default 64 in mamba2, should be small
 
                 "d_conv": 4,            # default 4 in mamba2, no need to change
                 "conv_init": None,      # init for conv layer, no need to change
@@ -246,6 +250,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         self.vocab_size = vocab_size
         self.d_model = d_model
         self.d_intermediate = d_intermediate
+        self.mlp_attn_only = mlp_attn_only
         self.n_layers = n_layers
 
         self.pad_token_id = pad_token_id
@@ -256,7 +261,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         self.moe_layer_idx = moe_layer_idx
 
         self.pad_vocab_size_multiple = pad_vocab_size_multiple
-
+    
         self.ssm_cfg = ssm_cfg
         self.attn_cfg = attn_cfg
         self.moe_cfg = moe_cfg
