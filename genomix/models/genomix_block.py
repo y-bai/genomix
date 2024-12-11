@@ -170,7 +170,7 @@ class GenoMixMamba2Block(nn.Module):
         # deinfe mixer layer
         self.mixer = Mamba2(                # Mamba2 layer
             d_model,                        
-            layer_idx, 
+            layer_idx=layer_idx, 
             **ssm_cfg, 
             **factory_kwargs
         ) if not attn_enable else MHA(       # attention layer
