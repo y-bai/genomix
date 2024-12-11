@@ -46,29 +46,36 @@ class GenoMixMamba2Config(PretrainedConfig):
         self,
         vocab_size: int = 16,
         d_model: int = 256,
-        d_intermediate: int=0,  # MLP hidden size
+        d_intermediate: int=256*2+128,  # MLP hidden size
         n_layers: int=32,
 
         pad_token_id=2, # pad_token_id=eos_token_id
         bos_token_id=0,
         eos_token_id=2,
 
-        attn_layer_idx=[3, 7, 11],
-        moe_layer_idx=None,
+        attn_layer_idx=[],
+        moe_layer_idx=[],
 
         pad_vocab_size_multiple: int = 8,   # for falsh attention
+
+        # for float value embedding
+        input_embedding_cfg={
+            "use_tabular_embedding": False, 
+            "fusion_type": "add",
+        },
 
         # Mamba2 block config
         ssm_cfg={ 
             "d_state": 64,          # SSM state expansion factor, (`N` in [1] Algorithm 2), typically 64 or 128 
             # https://github.com/state-spaces/mamba/issues/439
-            "headdim": 64,          # must d_model/headdim%8==0, default 64 in mamba2，should be small
+            "headdim": 32,          # must d_model/headdim%8==0, default 64 in mamba2，should be small
 
             "d_conv": 4,            # default 4 in mamba2, no need to change
             "conv_init": None,      # init for conv layer, no need to change
             "expand": 2,            # default 2 in mamba2, no need to change
             # https://github.com/state-spaces/mamba/issues/360
             # self.d_ssm % self.headdim == 0
+            # if d_ssm is None, d_ssm = d_model * expand
             "d_ssm": None,          # the dimension of D matrix, if None, we only apply SSM on this dimensions, the rest uses gated
             "ngroups": 1,           # default 1 in mamba2, no need to change
             "A_init_range": (1, 16),# default (1, 16) in mamba2, no need to change
@@ -117,13 +124,6 @@ class GenoMixMamba2Config(PretrainedConfig):
         rms_norm: bool = True,          # default True in mamba2, no need to change
         norm_epsilon: float = 1e-5,     # default 1e-5 in mamba2, no need to change
 
-        # for float value embedding
-        use_tabular_embedding: bool = False,  
-        input_embedding_cfg={
-            "use_tabular_embedding": False, 
-            "fusion_type": "add",
-        },
-
         tie_word_embeddings: bool = True,   # default True in mamba2, no need to change
         **kwargs
     ):
@@ -163,6 +163,13 @@ class GenoMixMamba2Config(PretrainedConfig):
         pad_vocab_size_multiple : int, optional
             the multiple of pad_vocab_size, by default 8, or 16
             see https://huggingface.co/state-spaces/mamba2-130m/blob/main/config.json
+        
+        input_embedding_cfg : dict, optional
+            by default 
+            {
+                "use_tabular_embedding": False, 
+                "fusion_type": "add",
+            }
         
         ssm_cfg : dict, optional
             the parameters for Mamba2 layer, by default
@@ -230,15 +237,6 @@ class GenoMixMamba2Config(PretrainedConfig):
         norm_epsilon : float, optional
             norm epsilon, by default 1e-5
 
-        use_tabular_embedding : bool, optional
-            whether or not using tabular embedding, by default False
-
-        input_embedding_cfg : dict, optional
-            by default 
-            {
-                "use_tabular_embedding": False, 
-                "fusion_type": "add",
-            }
         tie_word_embeddings : bool, optional
             If tie word embeddings, by default True
 
@@ -270,7 +268,6 @@ class GenoMixMamba2Config(PretrainedConfig):
         self.rms_norm = rms_norm
         self.norm_epsilon = norm_epsilon
 
-        self.use_tabular_embedding = use_tabular_embedding
         self.input_embedding_cfg = input_embedding_cfg
         self.tie_word_embeddings = tie_word_embeddings
 
