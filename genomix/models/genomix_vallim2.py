@@ -248,6 +248,7 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
                     ssm_cfg=ssm_cfg,
                     attn_enable=True if i in attn_layer_idx else False,
                     attn_cfg=attn_cfg,
+                    mlp_attn_only = config.mlp_attn_only,
                     moe_enable=True if i in moe_layer_idx else False,
                     moe_cfg=moe_cfg,
                     d_intermediate=config.d_intermediate,         
