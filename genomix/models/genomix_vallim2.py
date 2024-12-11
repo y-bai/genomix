@@ -205,12 +205,12 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         dtype=None,
     ):
         factory_kwargs = {"device": device, "dtype": dtype}
+        input_embdding_cfg = config.input_embedding_cfg if config.input_embedding_cfg is not None else {}
+        use_tabular_embedding = input_embdding_cfg.get("use_tabular_embedding", False)
+        
         if use_tabular_embedding:
             config.tie_word_embeddings = False
         super().__init__(config)
-
-        input_embdding_cfg = config.input_embedding_cfg if config.input_embedding_cfg is not None else {}
-        use_tabular_embedding = input_embdding_cfg.get("use_tabular_embedding", False)
         if use_tabular_embedding:
             fusion_type = input_embdding_cfg.get("fusion_type", "add")
             self.embeddings = GenoMixTabularEmbedding(
@@ -323,23 +323,20 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
     ) -> None:
         
         d_model = config.d_model
-        n_layer = config.n_layer
-        d_intermediate = config.d_intermediate
         vocab_size = config.vocab_size
-        ssm_cfg = config.ssm_cfg
-        attn_layer_idx = config.attn_layer_idx
-        attn_cfg = config.attn_cfg
-        rms_norm = config.rms_norm
-        residual_in_fp32 = config.residual_in_fp32
-        fused_add_norm = config.fused_add_norm
         pad_vocab_size_multiple = config.pad_vocab_size_multiple
 
         factory_kwargs = {"device": device, "dtype": dtype}
 
-        super().__init__(config)
-
         if vocab_size % pad_vocab_size_multiple != 0:
             vocab_size += pad_vocab_size_multiple - (vocab_size % pad_vocab_size_multiple)
+            logger.warning(
+                f"Vocab size is not a multiple of {pad_vocab_size_multiple}. "
+                f"Changing vocab size to {vocab_size}."
+            )
+            config.vocab_size = vocab_size
+        
+        super().__init__(config)
 
         self.backbone = GenoMixMamba2Model(config, **factory_kwargs)
         self.lm_head = nn.Linear(d_model, vocab_size, bias=False, **factory_kwargs)
