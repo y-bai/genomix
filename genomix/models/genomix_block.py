@@ -53,6 +53,38 @@ except ImportError:
 
 
 class GenoMixMamba2Block(nn.Module):
+    """
+
+    NOTE: Mamba2 module uses roughly 3 * expand * d_model^2 parameters if attention is disabled.
+    https://github.com/state-spaces/mamba/issues/360
+
+
+    reference:
+    https://github.com/alxndrTL/mamba.py/blob/main/mambapy/mamba.py
+
+    This is the structure of the torch modules for Mamba 1:
+    - A Mamba model is composed of several layers, which are ResidualBlock.
+    - A ResidualBlock is composed of a MambaBlock, a normalization, and a residual connection : ResidualBlock(x) = mamba(norm(x)) + x
+    - This leaves us with the MambaBlock : its input x is (B, L, D) and its outputs y is also (B, L, D) (B=batch size, L=seq len, D=model dim).
+    
+    First, we expand x into (B, L, 2*ED) (where E is usually 2) and split it into x and z, each (B, L, ED).
+        ED can be viewed as d_inner in Mamba1 config
+    
+    Then, we apply the short 1d conv to x, followed by an activation function (silu), then the SSM.
+    We then multiply it by silu(z).
+    See Figure 3 of the paper (page 8) for a visual representation of a MambaBlock.
+
+    Input shape into the selective_scan after splitting:
+    https://github.com/alxndrTL/mamba.py/blob/main/mambapy/mamba.py#L297
+    # x : (B, L, ED)
+    # Δ : (B, L, ED)
+    # A : (ED, N)
+    # B : (B, L, N)
+    # C : (B, L, N)
+    # D : (ED)
+    # y : (B, L, ED)
+
+    """
 
     def __init__(
         self, 
@@ -73,7 +105,7 @@ class GenoMixMamba2Block(nn.Module):
     ):
         """GenoMix mixer block
 
-        any combination of Mamaba2  Attention and MLP. 
+        any combination of Mamaba2 or Attention and MLP. 
 
         Parameters
         ----------
@@ -161,7 +193,7 @@ class GenoMixMamba2Block(nn.Module):
             self.mlp = None
         else:
             # NOTE: In original code, the slef.norm = norm_cls, 
-            # and slef.norm = norm_cls as well. This may result in the same norm layer.
+            # and slef.norm2 = norm_cls as well. This may result in the same norm layer.
             # ie., self.norm = self.norm2. 
             # see
             # https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/block.py#L29-L33
