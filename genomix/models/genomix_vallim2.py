@@ -34,7 +34,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers import PreTrainedModel
+from transformers import PreTrainedModel, Mamba2ForCausalLM, Mamba2Config
 from transformers.generation.utils import GenerationMixin
 
 from .genomix_config import GenoMixMamba2Config
@@ -142,7 +142,7 @@ class GenoMixMamba2PreTrainedModel(PreTrainedModel):
     and a simple interface for downloading and loading pretrained models. 
 
     reference:
-    https://github.com/state-spaces/mamba/blob/main/mamba_ssm/models/mixer_seq_simple.py
+    https://github.com/state-spaces/mamba/blob/main/mamba_ssm/models/mixer_seq_simple.py#L86
 
     """
     config_class = GenoMixMamba2Config
@@ -195,7 +195,7 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
 
     Adapated from:
 
-    https://github.com/state-spaces/mamba/blob/main/mamba_ssm/models/mixer_seq_simple.py
+    https://github.com/state-spaces/mamba/blob/main/mamba_ssm/models/mixer_seq_simple.py#L118
 
     """
     def __init__(
@@ -205,6 +205,8 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         dtype=None,
     ):
         factory_kwargs = {"device": device, "dtype": dtype}
+        if use_tabular_embedding:
+            config.tie_word_embeddings = False
         super().__init__(config)
 
         input_embdding_cfg = config.input_embedding_cfg if config.input_embedding_cfg is not None else {}
