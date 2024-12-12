@@ -45,7 +45,7 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
 
     model_input_names = ["input_ids", "attention_mask"]
 
-    padding_side: str = "right"
+    padding_side: str = "left"
     truncation_side: str = "right"
 
     def __init__(
@@ -54,6 +54,7 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
         bos_token="<BOS>",
         eos_token="<EOS>",
         unk_token="<UNK>",
+        mask_token="<MASK>",
         add_bos_token: bool=False,
         add_eos_token: bool=True,
         do_lower_case: bool=False,
@@ -90,12 +91,14 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
         bos_token = AddedToken(bos_token, lstrip=False, rstrip=False) if isinstance(bos_token, str) else bos_token
         eos_token = AddedToken(eos_token, lstrip=False, rstrip=False) if isinstance(eos_token, str) else eos_token
         unk_token = AddedToken(unk_token, lstrip=False, rstrip=False) if isinstance(unk_token, str) else unk_token
+        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
 
 
         super().__init__(
             bos_token=bos_token,
             eos_token=eos_token,
             unk_token=unk_token,
+            mask_token=mask_token,
             do_lower_case=do_lower_case,
             add_prefix_space=add_prefix_space,
             sp_model_kwargs=self.sp_model_kwargs,

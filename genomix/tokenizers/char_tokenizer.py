@@ -22,8 +22,13 @@ class CharacterTokenizer(PreTrainedTokenizer):
     def __init__(
         self, 
         characters: Sequence[str] = ['A', 'C', 'G', 'T', 'N'], 
+        bos_token: Optional[str] = '<BOS>',
+        eos_token: Optional[str] = '<EOS>',
+        unk_token: Optional[str] = '<UNK>',
+        mask_token: Optional[str] = '<MASK>',
         model_max_length: int = 16002, 
         padding_side: str='left',
+        truncation_side: str='right',
         add_bos_token: bool = False,
         add_eos_token: bool = False,
         add_prefix_space=False, 
@@ -37,10 +42,10 @@ class CharacterTokenizer(PreTrainedTokenizer):
         self.add_bos_token = add_bos_token
         self.add_eos_token = add_eos_token
 
-        bos_token = AddedToken("<BOS>", lstrip=False, rstrip=False)
-        eos_token = AddedToken("<EOS>", lstrip=False, rstrip=False)
-        unk_token = AddedToken("<UNK>", lstrip=False, rstrip=False)
-        mask_token = AddedToken("<MASK>", lstrip=False, rstrip=False)
+        bos_token = AddedToken(bos_token, lstrip=False, rstrip=False)
+        eos_token = AddedToken(eos_token, lstrip=False, rstrip=False)
+        unk_token = AddedToken(unk_token, lstrip=False, rstrip=False)
+        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False)
 
 
         self._vocab_str_to_int = {
@@ -61,6 +66,7 @@ class CharacterTokenizer(PreTrainedTokenizer):
             do_lower_case=do_lower_case,
             model_max_length=model_max_length,
             padding_side=padding_side,
+            truncation_side=truncation_side,
             **kwargs,
         )
 

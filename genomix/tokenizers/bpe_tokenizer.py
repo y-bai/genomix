@@ -131,7 +131,7 @@ class BioSeqBaseBPETokenizer(BaseTokenizer):
             min_frequency: int = 2,
             show_progress: bool = True,
             initial_alphabet: List[str] = ['A', 'C', 'G', 'T', 'N'],
-            special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>"],
+            special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>","<MASK>"],
             max_token_length: Optional[int] = None,
     ):
         """Train the model using the given files"""
@@ -155,7 +155,7 @@ class BioSeqBaseBPETokenizer(BaseTokenizer):
         min_frequency: int = 2,
         show_progress: bool = True,
         initial_alphabet: List[str] = ['A', 'C', 'G', 'T', 'N'],
-        special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>"],
+        special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>", "<MASK>"],
         max_token_length: Optional[int] = None,
         length: Optional[int] = None,
     ):
@@ -212,6 +212,7 @@ class BioSeqBPETokenizer(PreTrainedTokenizer):
         bos_token: str = "<BOS>",
         eos_token: str = "<EOS>",    
         unk_token: str = "<UNK>",
+        mask_token: str = "<MASK>",
         add_bos_token: bool=False,
         add_eos_token: bool=True,
         ## unset, since Error: unsupported operand type(s) for ** or pow(): 'int' and 'dict'
@@ -256,14 +257,14 @@ class BioSeqBPETokenizer(PreTrainedTokenizer):
         #     if isinstance(mask_token, str)
         #     else mask_token
         # )
-        # mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
+        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
 
         super().__init__(
             unk_token=unk_token,
             bos_token=bos_token,
             eos_token=eos_token,
             # pad_token=pad_token,
-            # mask_token=mask_token,
+            mask_token=mask_token,
             do_lower_case=do_lower_case,
             add_prefix_space=add_prefix_space,
             # model_max_length=model_max_length

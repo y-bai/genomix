@@ -137,7 +137,7 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
 
     def get_chunked_tokenized_dataset(
         self,
-        add_bos_token:bool=False,
+        add_bos_token:bool=True,
         add_eos_token:bool=True, 
     ):
         """Defaultly, tokenized seq are not chunked by return_overflowing_tokens

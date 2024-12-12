@@ -112,7 +112,7 @@ class BioSeqBaseUnigramTokenizer(BaseTokenizer):
             show_progress: bool = True,
             unk_token: str = "<UNK>",
             max_piece_length: int = 16,
-            special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>"],
+            special_tokens: List[Union[str, AddedToken]] = ["<BOS>", "<UNK>", "<EOS>","<MASK>"],
     ):
         """Train the model using the given files"""
 
@@ -204,7 +204,7 @@ class BioSeqUnigramTokenizer(PreTrainedTokenizer):
     vocab_files_names = VOCAB_FILES_NAMES
     model_input_names = ["input_ids", "attention_mask"]
 
-    padding_side: str = "right"
+    padding_side: str = "left"
     truncation_side: str = "right"
 
     def __init__(
@@ -214,7 +214,7 @@ class BioSeqUnigramTokenizer(PreTrainedTokenizer):
         eos_token: str = "<EOS>",   
         # pad_token: str = "<PAD>",   
         unk_token: str = "<UNK>",
-        # mask_token: str = "<MASK>",
+        mask_token: str = "<MASK>",
         add_bos_token: bool=False,
         add_eos_token: bool=True,
         model_max_length: Optional[int] =512, 
@@ -252,14 +252,14 @@ class BioSeqUnigramTokenizer(PreTrainedTokenizer):
         #     if isinstance(mask_token, str)
         #     else mask_token
         # )
-        # mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
+        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
 
         super().__init__(
             unk_token=unk_token,
             bos_token=bos_token,
             eos_token=eos_token,
             # pad_token=pad_token,
-            # mask_token=mask_token,
+            mask_token=mask_token,
             add_prefix_space=add_prefix_space,
             do_lower_case=do_lower_case,
             model_max_length=model_max_length,
