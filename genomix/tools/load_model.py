@@ -28,7 +28,7 @@ import torch
 from transformers.utils import WEIGHTS_NAME, CONFIG_NAME
 from transformers.utils.hub import cached_file
 
-from ..utils import read_json
+from ..utils import read_json_file
 
 # adapted from from mamba_ssm.utils.hf import load_config_hf, load_state_dict_hf
 def load_config_hf(
@@ -42,7 +42,7 @@ def load_config_hf(
         local_files_only=local_files_only, 
         _raise_exceptions_for_missing_entries=False)
 
-    return read_json(resolved_archive_file)
+    return read_json_file(resolved_archive_file)
 
 
 def load_state_dict_hf(
