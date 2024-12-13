@@ -111,6 +111,7 @@ class BioSeqBPETokenizerFast(PreTrainedTokenizerFast):
         base_model_kwarg: Optional[Dict[str, Any]] = None,
         add_prefix_space: bool = False, 
         do_lower_case: bool=False,
+        clean_up_tokenization_spaces=True,
         **kwargs,
     ):
         self.add_bos_token = add_bos_token
@@ -167,6 +168,7 @@ class BioSeqBPETokenizerFast(PreTrainedTokenizerFast):
                 do_lower_case=add_prefix_space,
                 padding_side=padding_side,
                 truncation_side=truncation_side,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces
                 **kwargs)
             tokenizer_object = BioSeqBPEConverter(slow_tokenizer).converted()
         else:
@@ -187,6 +189,7 @@ class BioSeqBPETokenizerFast(PreTrainedTokenizerFast):
             padding_side=padding_side,
             truncation_side=truncation_side,
             model_max_length=model_max_length,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             **kwargs,
         )
 

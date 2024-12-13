@@ -113,6 +113,7 @@ class BioSeqSPMTokenizerFast(PreTrainedTokenizerFast):
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
         add_prefix_space: bool = False, 
         do_lower_case: bool=False,
+        clean_up_tokenization_spaces=True,
         **kwargs,
     ):
 
@@ -150,6 +151,7 @@ class BioSeqSPMTokenizerFast(PreTrainedTokenizerFast):
                 do_lower_case=do_lower_case,
                 add_prefix_space=add_prefix_space,
                 sp_model_kwargs=self.sp_model_kwargs,
+                clean_up_tokenization_spaces=clean_up_tokenization_spaces,
                 **kwargs
             )
             tokenizer_object = BioSeqSPMConverter(slow_tokenizer).converted()
@@ -171,6 +173,7 @@ class BioSeqSPMTokenizerFast(PreTrainedTokenizerFast):
             padding_side=padding_side,
             truncation_side=truncation_side,
             model_max_length=model_max_length,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             **kwargs,
         )
 

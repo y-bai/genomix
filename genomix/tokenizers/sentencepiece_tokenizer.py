@@ -60,6 +60,7 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
         do_lower_case: bool=False,
         add_prefix_space: bool = False,
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
+        clean_up_tokenization_spaces=True,
         **kwargs,
     ):
         
@@ -102,6 +103,7 @@ class BioSeqSPMTokenizer(PreTrainedTokenizer):
             do_lower_case=do_lower_case,
             add_prefix_space=add_prefix_space,
             sp_model_kwargs=self.sp_model_kwargs,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             **kwargs,
         )
 

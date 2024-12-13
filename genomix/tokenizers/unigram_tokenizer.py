@@ -221,6 +221,7 @@ class BioSeqUnigramTokenizer(PreTrainedTokenizer):
         base_model_kwarg: Optional[Dict[str, Any]] = None,
         add_prefix_space: bool = False, 
         do_lower_case: bool=False,
+        clean_up_tokenization_spaces=True,
         **kwargs,
     ):
         self.vocab_file = vocab_file
@@ -263,6 +264,7 @@ class BioSeqUnigramTokenizer(PreTrainedTokenizer):
             add_prefix_space=add_prefix_space,
             do_lower_case=do_lower_case,
             model_max_length=model_max_length,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             **kwargs,
         )
 
