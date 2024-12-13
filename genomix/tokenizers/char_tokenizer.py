@@ -6,13 +6,21 @@ adapted from: https://github.com/dariush-bahrami/character-tokenizer/blob/master
 CharacterTokenzier for Hugging Face Transformers.
 This is heavily inspired from CanineTokenizer in transformers package.
 """
+
 import os
 import json
 from pathlib import Path
+import logging
 
-from typing import Dict, List, Optional, Sequence, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
+from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer    
 
-from transformers.tokenization_utils import AddedToken, PreTrainedTokenizer
+from ..utils import read_json_file
+from ..utils.constants import SPECIAL_TOKENS
+
+logger = logging.getLogger(__name__)
+
+VOCAB_FILES_NAMES = {"vocab_file": "char_vocab.json"}
 
 # Adapted from HyenaDNA tokenizer 
 class CharacterTokenizer(PreTrainedTokenizer):
@@ -21,6 +29,7 @@ class CharacterTokenizer(PreTrainedTokenizer):
     
     def __init__(
         self, 
+        vocab_file: str = None,
         characters: Sequence[str] = ['A', 'C', 'G', 'T', 'N'], 
         bos_token: Optional[str] = '<BOS>',
         eos_token: Optional[str] = '<EOS>',
@@ -33,41 +42,64 @@ class CharacterTokenizer(PreTrainedTokenizer):
         add_eos_token: bool = False,
         add_prefix_space=False, 
         do_lower_case=False,
+        clean_up_tokenization_spaces=True,
         **kwargs
     ):
-        
-        self.characters = characters
-        self.model_max_length = model_max_length
+        self._config = {}
+        if vocab_file is not None:
+            # Load from file
+            self._config = read_json_file(vocab_file)
+        else:
+            # config
+            self._config = {
+                "model_max_length": model_max_length,
+                "padding_side": padding_side,
+                "truncation_side": truncation_side,
+                "add_bos_token": add_bos_token,
+                "add_eos_token": add_eos_token,
+                "add_prefix_space": add_prefix_space,
+                "do_lower_case": do_lower_case,
+                'clean_up_tokenization_spaces': clean_up_tokenization_spaces,
+                **kwargs,
+            }
+            _vocab = {
+                bos_token: 0,
+                eos_token: 1,
+                unk_token: 2,
+                mask_token: 3,
+                **{ch: i + 4 for i, ch in enumerate(characters)},
+            }
+            self._config["vocab"] = _vocab
+            
+        bos_token = self._config['vocab'].get("bos_token", SPECIAL_TOKENS.BOS.value)
+        eos_token = self._config['vocab'].get("eos_token", SPECIAL_TOKENS.EOS.value)
+        unk_token = self._config['vocab'].get("unk_token", SPECIAL_TOKENS.UNK.value)
+        mask_token = self._config['vocab'].get("mask_token", SPECIAL_TOKENS.MASK.value)
 
-        self.add_bos_token = add_bos_token
-        self.add_eos_token = add_eos_token
+        self.add_bos_token = self._config["add_bos_token"]
+        self.add_eos_token = self._config["add_eos_token"]
 
-        bos_token = AddedToken(bos_token, lstrip=False, rstrip=False)
-        eos_token = AddedToken(eos_token, lstrip=False, rstrip=False)
-        unk_token = AddedToken(unk_token, lstrip=False, rstrip=False)
-        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False)
-
-
-        self._vocab_str_to_int = {
-            "<BOS>": 0,
-            "<EOS>": 1,
-            "<UNK>": 2,
-            "<MASK>": 3,
-            **{ch: i + 4 for i, ch in enumerate(characters)},
-        }
+        self._vocab_str_to_int = self._config.get("vocab", {})
+        assert len(self._vocab_str_to_int) > 0, "No vocabulary is provided."
         self._vocab_int_to_str = {v: k for k, v in self._vocab_str_to_int.items()}
+
+        bos_token = AddedToken(bos_token, lstrip=False, rstrip=False) if isinstance(bos_token, str) else bos_token
+        eos_token = AddedToken(eos_token, lstrip=False, rstrip=False) if isinstance(eos_token, str) else eos_token
+        unk_token = AddedToken(unk_token, lstrip=False, rstrip=False) if isinstance(unk_token, str) else unk_token
+        mask_token = AddedToken(mask_token, lstrip=False, rstrip=False) if isinstance(mask_token, str) else mask_token
 
         super().__init__(
             bos_token=bos_token,
             eos_token=eos_token,
             unk_token=unk_token,
             mask_token=mask_token,
-            add_prefix_space=add_prefix_space,
-            do_lower_case=do_lower_case,
-            model_max_length=model_max_length,
-            padding_side=padding_side,
-            truncation_side=truncation_side,
-            **kwargs,
+            add_prefix_space=self._config.get("add_prefix_space", False),
+            do_lower_case=self._config.get("do_lower_case", False),
+            model_max_length=self._config.get("model_max_length", 1024),
+            padding_side=self._config.get("padding_side", "left"),
+            truncation_side=self._config.get("padding_side", "left"),
+            clean_up_tokenization_spaces=self._config.get("clean_up_tokenization_spaces", True),
+            **kwargs if vocab_file is None else {},
         )
 
     @property
@@ -81,7 +113,7 @@ class CharacterTokenizer(PreTrainedTokenizer):
         return list(text)
 
     def _convert_token_to_id(self, token: str) -> int:
-        return self._vocab_str_to_int.get(token, self._vocab_str_to_int["<UNK>"])
+        return self._vocab_str_to_int.get(token, self._vocab_str_to_int[SPECIAL_TOKENS.UNK.value])
 
     def _convert_id_to_token(self, index: int) -> str:
         return self._vocab_int_to_str[index]
@@ -178,28 +210,23 @@ class CharacterTokenizer(PreTrainedTokenizer):
         
         return output
 
-    def get_config(self) -> Dict:
-        return {
-            "char_ords": [ord(ch) for ch in self.characters],
-            "model_max_length": self.model_max_length,
-        }
+    # @classmethod
+    # def from_pretrained(cls, pretrained_model_name_or_path: Union[str, os.PathLike], **kwargs):
+    #     cfg_file = os.path.join(pretrained_model_name_or_path, 
+    #                             (filename_prefix + "-" if filename_prefix else "") + "char_vocab.json")
+    #     with open(cfg_file) as f:
+    #         cfg = json.load(f)
+    #     return cls.from_config(cfg)
 
-    @classmethod
-    def from_config(cls, config: Dict):
-        cfg = {}
-        cfg["characters"] = [chr(i) for i in config["char_ords"]]
-        cfg["model_max_length"] = config["model_max_length"]
-        return cls(**cfg)
+    def save_vocabulary(self, save_directory, filename_prefix = None):
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], **kwargs):
-        cfg_file = Path(save_directory) / "tokenizer_config.json"
-        cfg = self.get_config()
-        with open(cfg_file, "w") as f:
-            json.dump(cfg, f, indent=4)
-
-    @classmethod
-    def from_pretrained(cls, save_directory: Union[str, os.PathLike], **kwargs):
-        cfg_file = Path(save_directory) / "tokenizer_config.json"
-        with open(cfg_file) as f:
-            cfg = json.load(f)
-        return cls.from_config(cfg)
+        if not os.path.isdir(save_directory):
+            logger.error(f"Vocabulary path ({save_directory}) should be a directory")
+            return
+        
+        cfg_file = os.path.join(save_directory, 
+                                (filename_prefix + "-" if filename_prefix else "") + VOCAB_FILES_NAMES["vocab_file"])
+        
+        with open(cfg_file, 'w') as f:
+            json.dump(self._config, f, indent=2)
+        return tuple(cfg_file)
