@@ -43,7 +43,7 @@ class CharacterTokenizer(PreTrainedTokenizer):
         add_prefix_space=False, 
         do_lower_case=False,
         clean_up_tokenization_spaces=True,
-        **kwargs
+        **kwargs,
     ):
         self._config = {}
         if vocab_file is not None:
@@ -52,34 +52,17 @@ class CharacterTokenizer(PreTrainedTokenizer):
         else:
             # config
             self._config = {
-                "model_max_length": model_max_length,
-                "padding_side": padding_side,
-                "truncation_side": truncation_side,
-                "add_bos_token": add_bos_token,
-                "add_eos_token": add_eos_token,
-                "add_prefix_space": add_prefix_space,
-                "do_lower_case": do_lower_case,
-                'clean_up_tokenization_spaces': clean_up_tokenization_spaces,
-                **kwargs,
-            }
-            _vocab = {
                 bos_token: 0,
                 eos_token: 1,
                 unk_token: 2,
                 mask_token: 3,
                 **{ch: i + 4 for i, ch in enumerate(characters)},
             }
-            self._config["vocab"] = _vocab
-            
-        bos_token = self._config['vocab'].get("bos_token", SPECIAL_TOKENS.BOS.value)
-        eos_token = self._config['vocab'].get("eos_token", SPECIAL_TOKENS.EOS.value)
-        unk_token = self._config['vocab'].get("unk_token", SPECIAL_TOKENS.UNK.value)
-        mask_token = self._config['vocab'].get("mask_token", SPECIAL_TOKENS.MASK.value)
 
-        self.add_bos_token = self._config["add_bos_token"]
-        self.add_eos_token = self._config["add_eos_token"]
+        self.add_bos_token = add_bos_token
+        self.add_eos_token = add_eos_token
 
-        self._vocab_str_to_int = self._config.get("vocab", {})
+        self._vocab_str_to_int = self._config
         assert len(self._vocab_str_to_int) > 0, "No vocabulary is provided."
         self._vocab_int_to_str = {v: k for k, v in self._vocab_str_to_int.items()}
 
@@ -93,12 +76,12 @@ class CharacterTokenizer(PreTrainedTokenizer):
             eos_token=eos_token,
             unk_token=unk_token,
             mask_token=mask_token,
-            add_prefix_space=self._config.get("add_prefix_space", False),
-            do_lower_case=self._config.get("do_lower_case", False),
-            model_max_length=self._config.get("model_max_length", 1024),
-            padding_side=self._config.get("padding_side", "left"),
-            truncation_side=self._config.get("padding_side", "left"),
-            clean_up_tokenization_spaces=self._config.get("clean_up_tokenization_spaces", True),
+            add_prefix_space=add_prefix_space,
+            do_lower_case=do_lower_case,
+            model_max_length=model_max_length,
+            padding_side=padding_side,
+            truncation_side=truncation_side,
+            clean_up_tokenization_spaces=clean_up_tokenization_spaces,
             **kwargs if vocab_file is None else {},
         )
 
