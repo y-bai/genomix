@@ -78,7 +78,8 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
                 # see: https://github.com/huggingface/transformers/issues/23001
                 return_overflowing_tokens=False if self.streaming else return_overflowing_tokens,
                 stride= 0 if self.streaming else self.stride,
-                add_special_tokens=True, # default value in the __call__ function
+                # NOTE: we not add special tokens in steaming mode, as we will add them in the chunking step.
+                add_special_tokens= False if self.streaming else True, # True: default value in the __call__ function
                 # return_special_tokens_mask=False if self.streaming else True, # for performance improvement
             )
             # return token_encodes
@@ -136,9 +137,7 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
         return self.clm_tokenized_ds
 
     def get_chunked_tokenized_dataset(
-        self,
-        add_bos_token:bool=True,
-        add_eos_token:bool=True, 
+        self
     ):
         """Defaultly, tokenized seq are not chunked by return_overflowing_tokens
         when using stream mode. Therefore, we group the tokenized dataset and 
@@ -148,9 +147,9 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
             logger.warn('>>>>>NO need for chunking, as not using streaming mode. Returning original tokenized data.')
             return self.get_tokenized_dataset()
         
-        # update self.tokenizer 
-        self.tokenizer.add_bos_token = add_bos_token
-        self.tokenizer.add_eos_token = add_eos_token
+        # 
+        logger.info(f"whether add BOS token: {self.tokenizer.add_bos_token}")
+        logger.info(f"whether add EOS token: {self.tokenizer.add_eos_token}")
         
         # print(f"updated tokenizer.add_bos_token to: {self.tokenizer.add_bos_token}")
         # print(f"updated tokenizer.add_eos_token to: {self.tokenizer.add_eos_token}")
