@@ -26,8 +26,9 @@
 import copy
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple, Union
-from transformers import TrainingArguments
 import json
+
+from transformers import PreTrainedTokenizerFast
 
 from ..tokenizers import (
     get_tokenizer_cls, 
@@ -141,28 +142,27 @@ class GenoMixTokenization:
         chars = config_dict.pop("chars", None)
 
         assert tokenizer_type is not None, "tokenizer_type must be provided"
-
-        if tokenizer_type == "CHAR_TOKEN":
-            assert chars is not None, "chars must be provided for char tokenization"
-
+        
+        if tokenizer_pretrained_model_path is not None:
+            _tokenizer = get_tokenizer_cls(tokenizer_type).from_pretrained(
+                pretrained_model_name_or_path = tokenizer_pretrained_model_path,
+                local_files_only=True,
+                **config_dict)
+        elif tokenizer_type == "CHAR_TOKEN" and chars is not None:
             _tokenizer = get_tokenizer_cls(tokenizer_type)(
                 characters = chars, 
                 **config_dict
             )
         else:
-            assert tokenizer_pretrained_model_path is not None, "tokenizer_pretrained_model_path must be provided"
+            raise ValueError(f"If tokenizer_pretrained_model_path in {config_dict} is not provided,  " +
+                            "`tokenizer_type` must be CHAR_TOKEN, and `chars` must be provided")
 
-            _tokenizer = get_tokenizer_cls(tokenizer_type).from_pretrained(
-                pretrained_model_name_or_path = tokenizer_pretrained_model_path,
-                local_files_only=True,
-                **config_dict
-            )
         # we treat the pad_token as the eos_token
         _tokenizer.pad_token = _tokenizer.eos_token
 
         self.tokenizer = _tokenizer
     
-    def tokenize_by_dataset_map(
+    def tokenize_with_dataset(
         self,
         input_dataset: Union[IterableDatasetDict, DatasetDict, IterableDataset, Dataset],
         column_names: Optional[List[str]] = None,
@@ -193,7 +193,35 @@ class GenoMixTokenization:
             return_overflowing_tokens = return_overflowing_tokens,
             load_from_cache_file = not overwrite_cache,  # not used in streaming mode
             num_proc = map_num_proc,  # not used in streaming mode
-        ).get_chunked_tokenized_dataset(
-            add_bos_token = self.tokenizer.add_bos_token,
-            add_eos_token = self.tokenizer.add_eos_token
-        )
+        ).get_chunked_tokenized_dataset()
+    
+    def tokenize_with_text_file(
+        self,
+        txt_file_name: str, # a very long sequence
+        # for tokenizer 
+        padding: Optional[str] = "max_length",
+        truncation: Optional[bool] = True,
+        token_min_ctx_fraction: Optional[float] = 1.0,
+        stride: Optional[int] = 16, # overlap between chunks
+        num_proc: Optional[int] = 16,
+    ):
+        with open(txt_file_name, 'r') as f:
+            text = f.read()
+        
+        # len(text): the number of lines in the text file
+        # we split the text into batches based on the num_proc
+        batch_size = len(text) // num_proc 
+        # tokenization
+        if self.tokenizer.is_fast:
+            tokenized_seq = self.tokenizer(
+                    txt_line.strip(),
+                    max_length=self.max_length,
+                    padding=True,
+                    truncation=True,
+                    # return_overflowing_tokens has different behavior between slow tokenizer and fast tokenizer
+                    # see: https://github.com/huggingface/transformers/issues/23001
+                    return_overflowing_tokens=True,
+                    stride= stride,
+                    add_special_tokens=True, # default value in the __call__ function
+                    # return_special_tokens_mask=False if self.streaming else True, # for performance improvement
+                )
