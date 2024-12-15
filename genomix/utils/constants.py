@@ -42,6 +42,7 @@ class SPECIAL_TOKENS(ExtendedEnum):
     MASK = "<MASK>"
     # `<PAD>` is not included in the special tokens because we think of it as a `<EOS>` token.
 
+# base models for tokenization
 class TOKENIZER_MODELS(ExtendedEnum):
     BPE = "BPE"
     UNIGRAM = "UNIGRAM"
