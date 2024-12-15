@@ -88,6 +88,7 @@ class BioSeqBPEConverter(Converter):
         # https://github.com/huggingface/tokenizers/issues/1105
         return base_tokenizer._tokenizer
 
+
 class BioSeqBPETokenizerFast(PreTrainedTokenizerFast):
 
     vocab_files_names = VOCAB_FILES_NAMES
