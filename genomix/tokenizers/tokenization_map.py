@@ -56,10 +56,12 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
         self.stride = stride
         self.streaming = streaming
         self.min_len_frac = min_len_frac
+        self.need_chunking = streaming or (not tokenizer.is_fast)
+
     
     def do_map(
         self,
-        input_dataset: Union[IterableDatasetDict, DatasetDict],
+        input_dataset: Union[IterableDatasetDict, DatasetDict, IterableDataset, Dataset],
         dataset_col_remove: Optional[List[str]] = None,
         dataset_col_tokenize: Optional[str] = None,
         padding: Union[bool, str] = "max_length",
@@ -68,18 +70,19 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
         load_from_cache_file: bool=True,
         num_proc: int = 4,
     ):
+
         def tokenize_fn(untokenized_dataset):
             token_encodes = self.tokenizer(
                 untokenized_dataset[dataset_col_tokenize],
                 max_length=self.max_length,
-                padding=False if self.streaming else padding,
-                truncation=False if self.streaming else truncation,
+                padding=False if self.need_chunking else padding,
+                truncation=False if self.need_chunking else truncation,
                 # return_overflowing_tokens has different behavior between slow tokenizer and fast tokenizer
                 # see: https://github.com/huggingface/transformers/issues/23001
-                return_overflowing_tokens=False if self.streaming else return_overflowing_tokens,
-                stride= 0 if self.streaming else self.stride,
+                return_overflowing_tokens=False if self.need_chunking else return_overflowing_tokens,
+                stride= 0 if self.need_chunking else self.stride,
                 # NOTE: we not add special tokens in steaming mode, as we will add them in the chunking step.
-                add_special_tokens= False if self.streaming else True, # True: default value in the __call__ function
+                add_special_tokens= False if self.need_chunking else True, # True: default value in the __call__ function
                 # return_special_tokens_mask=False if self.streaming else True, # for performance improvement
             )
             # return token_encodes
@@ -117,6 +120,7 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
                 desc="Running tokenizer on raw dataset (filter), no streaming",
             )
         else:
+            assert isinstance(input_dataset, (IterableDatasetDict, IterableDataset)), "Only support IterableDatasetDict or IterableDataset in streaming mode."
             _tokenized_ds = input_dataset.map(
                 tokenize_fn, 
                 batched=True, 
@@ -143,8 +147,8 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
         when using stream mode. Therefore, we group the tokenized dataset and 
         then chunk it with padding.
         """
-        if not self.streaming:
-            logger.warn('>>>>>NO need for chunking, as not using streaming mode. Returning original tokenized data.')
+        if not self.need_chunking:
+            logger.warning('>>>>>NO need for chunking, as not using streaming mode. Returning original tokenized data.')
             return self.get_tokenized_dataset()
         
         # 
@@ -225,7 +229,7 @@ class BioSeqTokenizerMap(BioSeqTokenizerMapMinxi):
             # - self.stride = overlap_size, not the step size,
             # which is defined in the `__call__` of tokenizer (slow or fast).
             step_size = _chunk_length - self.stride
-            num_chunks = (concat_token_ids_length - _chunk_length) // step_size + 1
+            num_chunks = (concat_token_ids_length - _chunk_length) // step_size # + 1
 
             # chunked total length
             _total_length = step_size * num_chunks + self.stride
