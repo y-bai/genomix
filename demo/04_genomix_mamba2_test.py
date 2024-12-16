@@ -32,11 +32,12 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.append('..')
 
-logger = logging.getLogger(__name__)
-
-
 from genomix.models.genomix_vallim2 import GenoMixMamba2Model, GenoMixMamba2ForCausalLM
 from genomix.models.genomix_config import GenoMixMamba2Config
+from dstool.tokenization import GenoMixTokenizationConfig, GenoMixTokenization
+from genomix.tokenizers.char_tokenizer import CharacterTokenizer
+
+logger = logging.getLogger(__name__)
 
 def test_genomix_mamba2_model():
     
@@ -68,6 +69,35 @@ def test_genomix_mamba2_model():
     logger.info(f"num_params: {num_params}")
 
 
+def test_tokenzation():
+    tokenization_config = GenoMixTokenizationConfig()
+    # tokenization_config.tokenizer_type = 'BPE_SLOW'
+    # tokenization_config.tokenizer_pretrained_model_path = "/home/share/huadjyin/home/baiyong01/projects/biomlm/biomlm/tokens/20000_200/T2T/BPE/5008"
+    
+    tokenization_config.model_max_length = 5
+    logger.info(f"tokenization_config: \n{tokenization_config}")
+    tokenization = GenoMixTokenization(tokenization_config)
+    tokenizer = tokenization.tokenizer
+    logger.info(f"tokenization.tokenizer: \n{tokenizer}")
+
+    logger.info(f"tokenization.tokenizer.model_max_length: \n{tokenizer.model_max_length}")
+
+    seq = 'CACCCTAAACCCTAACCCCTAACCCTAACCCTAACCCTAACCCTAACCCTAACCCCTAAACCCT'
+
+    re = tokenizer(
+        seq, 
+        max_length=5,
+        padding="max_length",
+        truncation=True,
+        return_overflowing_tokens=True,
+        stride= 2,
+        add_special_tokens=True, # default value in the __call__ function
+        # return_special_tokens_mask=False if self.streaming else True, # for performance improvement
+    )
+    logger.info(f"re: \n{re}")
+
+
+
 if __name__ == "__main__":
     # Setup logging
     logging.basicConfig(
@@ -77,7 +107,18 @@ if __name__ == "__main__":
         level=logging.INFO
     )
 
-    test_genomix_mamba2_model()
+    # test_genomix_mamba2_model()
+    # test_tokenzation()
+    # char_tokenizer = CharacterTokenizer()
+    # logger.info(char_tokenizer.init_kwargs)
+    # char_tokenizer.save_pretrained('/home/share/huadjyin/home/baiyong01/projects/genomix/tmp')
+
+    char_tokenizer = CharacterTokenizer.from_pretrained(
+        pretrained_model_name_or_path='/home/share/huadjyin/home/baiyong01/projects/genomix/tmp',
+        local_files_only=True)
+    logger.info(char_tokenizer.get_vocab())
+    
+
 
 
 
