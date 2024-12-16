@@ -28,6 +28,7 @@ import copy
 from dataclasses import dataclass
 from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple, Union
+import logging
 import json
 import multiprocessing as mp
 from tqdm import tqdm
@@ -40,6 +41,7 @@ from ..tokenizers import (
 )
 from ..utils.constants import SPECIAL_TOKENS, INITIAL_ALPHABETS
 
+logger = logging.getLogger(__name__)
 
 class TokenizationConfig:
 
@@ -266,13 +268,20 @@ class GenoMixTokenization:
         # Determine the total number of lines in the file
         with open(input_txt_fname, "rt", encoding="utf-8") as f:
             total_lines = sum(1 for _ in f)
+        
+        logger.info(f"Total number of lines in the input file: {total_lines}")
 
         batch_size = total_lines // num_proc if batch_size is None else batch_size
+        if batch_size < 1:
+            logger.warning(f"batch_size is less than 1, setting batch_size = 1, and num_proc = total_lines ({total_lines})")
+            batch_size = 1
+            num_proc = total_lines
         # Create chunks based on line numbers
         batchs = [(input_txt_fname, i, batch_size) for i in range(0, total_lines, batch_size)]
-        
+
+        logger.info(f"Total number of batches: {len(batchs)}, batch_size={batch_size}, with number of processes: {num_proc}")
         # resulting: batches[0] = batch_size  * len(data[0])
-         # Use multiprocessing to tokenize each chunk
+        # Use multiprocessing to tokenize each chunk
         with mp.Pool(processes=num_proc) as pool:
             results = pool.starmap(
                 _tokenize_chunk_txt, [
@@ -280,13 +289,18 @@ class GenoMixTokenization:
                     tqdm(batchs, desc=f"Running tokenizer on text file", disable=disable_tqdm)
                 ]
             ) 
-
+        
+        logger.info(f"Total number of chunks: {len(results)}, writing to output files...")
+        total_tokenized_lines = 0
         with open(input_ids_fname, 'a+', encoding='utf-8') as f_input_ids, open(attention_mask_fname, 'a+', encoding='utf-8') as f_mask_attn:
             for result in results:
+                total_tokenized_lines += len(result["input_ids"])
                 for i_input_ids in result["input_ids"]:
                     f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
                 for i_mask_attn in result["attention_mask"]:
                     f_mask_attn.write(','.join(map(str, i_mask_attn)) + '\n')
+        
+        logger.info(f"Tokenized output files (lines = {total_tokenized_lines}) are saved to {save_path}")
 
         # Combine the results
         # tokenized_text = {'input_ids': [], 'attention_mask': []}
@@ -354,6 +368,7 @@ def _tokenize_chunk_txt(
             stride=0,
             add_special_tokens=False,
         )
+
         concat_token_ids = {k: list(chain(*tokenized_batch[k])) for k in tokenized_batch.keys()}
         # tokenized_batch.keys(): ['input_ids', 'attention_mask']
 
@@ -371,7 +386,7 @@ def _tokenize_chunk_txt(
         _remain_length_with_stride = _remain_length + stride
 
         result_chunks = {}
-        for k, t in concat_token_ids.items():
+        for k, t in concat_token_ids.items(): # the t is a list of token ids, very long
             chunked_ids = []
             for i in range(num_chunks):
                 _start_pos = i * step_size
@@ -412,6 +427,7 @@ def _tokenize_chunk_txt(
         del concat_token_ids
 
         return result_chunks
+    
 
 
 
