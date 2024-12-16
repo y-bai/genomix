@@ -59,7 +59,7 @@ if __name__ == "__main__":
     tokenization.tokenize_with_text_file(
         '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/test_corpus.txt',
         stride = 4, # overlap between chunks
-        token_min_ctx_fraction=0.0,
+        token_min_ctx_fraction=1.0,
         batch_size = 2,
         num_proc = 4,
         disable_tqdm = False,
