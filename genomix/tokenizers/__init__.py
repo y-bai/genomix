@@ -23,6 +23,8 @@
 
 """
 
+from enum import Enum
+
 from .bpe_tokenizer import BioSeqBaseBPETokenizer, BioSeqBPETokenizer
 from .bpe_tokenizer_fast import BioSeqBPETokenizerFast
 from .unigram_tokenizer import BioSeqBaseUnigramTokenizer, BioSeqUnigramTokenizer
@@ -32,3 +34,16 @@ from .sentencepiece_tokenizer_fast import BioSeqSPMTokenizerFast
 from .char_tokenizer import CharacterTokenizer
 
 from .tokenization_map import BioSeqTokenizerMap
+
+PRETRAINED_MODEL_NAME_CLS_MAP = {
+    "BPE_SLOW": BioSeqBPETokenizer,
+    "BPE_FAST": BioSeqBPETokenizerFast,
+    "UNIGRAM_SLOW": BioSeqUnigramTokenizer,
+    "UNIGRAM_FAST": BioSeqUnigramTokenizerFast,
+    "SPM_SLOW": BioSeqSPMTokenizer,
+    "SPM_FAST": BioSeqSPMTokenizerFast,
+    "CHAR_TOKEN": CharacterTokenizer,
+}
+
+def get_tokenizer_cls(model_name: str):
+    return PRETRAINED_MODEL_NAME_CLS_MAP[model_name]
