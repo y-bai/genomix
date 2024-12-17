@@ -52,18 +52,16 @@ if __name__ == "__main__":
     )
 
     stat_time = time.time()
-    tokenization = GenoMixTokenization(GenoMixTokenizationConfig(
-        model_max_length=8,
-        add_bos_token=True,
-    ))
+    tokenization = GenoMixTokenization(GenoMixTokenizationConfig())
     tokenization.tokenize_with_text_file(
-        '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/test_corpus.txt',
-        stride = 4, # overlap between chunks
+        '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/GCF_009914755.1_T2T-CHM13v2.0_genomic_TEST.txt',
+        stride = 16, # overlap between chunks
         token_min_ctx_fraction=1.0,
-        batch_size = 2,
-        num_proc = 4,
+        batch_size = None,
+        num_proc = 16,
         disable_tqdm = False,
-        save_path = "/home/share/huadjyin/home/baiyong01/projects/genomix/tmp",
+        save_path = "/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata",
+        save_file_prefix="chm13t2t-test"
     )
     end_time = time.time()
     logger.info(f'Memory usage: {cal_memory_usage():.2f} MB')
