@@ -186,7 +186,7 @@ class GenoMixTokenization:
         token_min_ctx_fraction: Optional[float] = 1.0,
         use_streaming: Optional[bool] = False, # used for IterableDataset or IterableDatasetDict
         map_num_proc: Optional[int] = 16,
-        overwrite_cache: Optional[bool] = False,
+        overwrite_cache: Optional[bool] = True,
     ):
         return BioSeqTokenizerMap(
             self.tokenizer,
@@ -216,6 +216,7 @@ class GenoMixTokenization:
         save_path: Optional[str] = None,
         save_file_prefix: Optional[str] = None,
         remove_existing_output_files: Optional[bool] = True,
+        save_attn_mask: Optional[bool] = True,
     ):
         """Tokenize a text file in parallel.
         
@@ -248,6 +249,9 @@ class GenoMixTokenization:
             
         remove_existing_output_files : bool, optional
             remove existing output files, by default True
+        
+        save_attn_mask : bool, optional
+            save attention mask, by default True
         
         """
 
@@ -292,14 +296,21 @@ class GenoMixTokenization:
         
         logger.info(f"Total number of chunks: {len(results)}, writing to output files...")
         total_tokenized_lines = 0
-        with open(input_ids_fname, 'a+', encoding='utf-8') as f_input_ids, open(attention_mask_fname, 'a+', encoding='utf-8') as f_mask_attn:
-            for result in results:
-                total_tokenized_lines += len(result["input_ids"])
-                for i_input_ids in result["input_ids"]:
-                    f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
-                for i_mask_attn in result["attention_mask"]:
-                    f_mask_attn.write(','.join(map(str, i_mask_attn)) + '\n')
-        
+        if save_attn_mask:
+            with open(input_ids_fname, 'a+', encoding='utf-8') as f_input_ids, open(attention_mask_fname, 'a+', encoding='utf-8') as f_mask_attn:
+                for result in results:
+                    total_tokenized_lines += len(result["input_ids"])
+                    for i_input_ids in result["input_ids"]:
+                        f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
+                    for i_mask_attn in result["attention_mask"]:
+                        f_mask_attn.write(','.join(map(str, i_mask_attn)) + '\n')
+        else:
+            with open(input_ids_fname, 'a+', encoding='utf-8') as f_input_ids:
+                for result in results:
+                    total_tokenized_lines += len(result["input_ids"])
+                    for i_input_ids in result["input_ids"]:
+                        f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
+        del results
         logger.info(f"Tokenized output files (lines = {total_tokenized_lines}) are saved to {save_path}")
 
         # Combine the results
