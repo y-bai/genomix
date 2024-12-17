@@ -36,7 +36,7 @@ import torch.nn.functional as F
 import torch.utils.data
 
 import datasets
-from datasets import load_dataset, IterableDataset, Dataset, Features
+from datasets import load_dataset, Features
 
 logger = logging.getLogger(__name__)
 
