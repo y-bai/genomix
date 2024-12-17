@@ -27,11 +27,13 @@ from dataclasses import dataclass
 from typing import Any, List, Mapping, NewType
 import torch
 
+# from transformers import DataCollatorForLanguageModeling
+
 InputDataClass = NewType("InputDataClass", Any)
 
 
 @dataclass
-class GenoMixDataCollator:
+class GenoMixDataCollatorForLanguageModeling:
     """
     Data collator for GenoMix model.
 
