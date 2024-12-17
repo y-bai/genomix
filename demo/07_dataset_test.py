@@ -38,7 +38,7 @@ from torch.utils.data import DataLoader
 sys.path.append('..')
 
 from genomix.data_builder.datasets import GenoMixDataIterableDatasetV1, GenoMixDataIterableDatasetV2
-from genomix.data_builder.data_collator import GenoMixDataCollator
+from genomix.data_builder.data_collator import GenoMixDataCollatorForLanguageModeling
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     iter_ds = GenoMixDataIterableDatasetV1(
         '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/chm13t2t-train-input_ids.txt',
     ) 
-    dtloader = DataLoader(iter_ds, batch_size=4, num_workers=4, collate_fn=GenoMixDataCollator())
+    dtloader = DataLoader(iter_ds, batch_size=4, num_workers=4, collate_fn=GenoMixDataCollatorForLanguageModeling())
     for i, x in enumerate(dtloader):
         print(x)
         # for y in x['input_ids']:
