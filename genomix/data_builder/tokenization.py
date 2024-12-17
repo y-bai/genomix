@@ -172,6 +172,11 @@ class GenoMixTokenization:
         _tokenizer.pad_token = _tokenizer.eos_token
 
         self.tokenizer = _tokenizer
+
+
+    def get_tokenizer(self):
+        return self.tokenizer
+    
     
     def tokenize_with_dataset(
         self,
