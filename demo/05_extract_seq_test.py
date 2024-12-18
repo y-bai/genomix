@@ -32,15 +32,11 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.append('..')
-
 from dstool.extract_seqence import extract_seq_from_fasta
+from genomix.utils.constants import GENOMIX_DATA_DIR
+from genomix.utils.common import cal_memory_usage, check_dir_exists
 
 logger = logging.getLogger(__name__)
-
-def cal_memory_usage():
-    import psutil
-    process = psutil.Process(os.getpid())
-    return process.memory_info().rss / 1024 / 1024 # MB
 
 if __name__ == "__main__":
     # Setup logging
@@ -51,13 +47,21 @@ if __name__ == "__main__":
         level=logging.INFO
     )
 
-    input_fa = r"/home/share/huadjyin/home/baiyong01/projects/biomlm/data/T2T/ncbi_dataset/data/GCF_009914755.1/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna"
-    output_path = r"/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata"
+    input_fa = os.path.join(
+        os.path.expanduser('~'), 
+        "projects/biomlm/data/T2T/ncbi_dataset/data/GCF_009914755.1/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna"
+    )# r"/home/share/huadjyin/home/baiyong01/projects/biomlm/data/T2T/ncbi_dataset/data/GCF_009914755.1/GCF_009914755.1_T2T-CHM13v2.0_genomic.fna"
+    SUB_DIR = "chm13-t2t"
+    OUTPUT_FILE_BASE_NAME = "GCF_009914755.1_T2T-CHM13v2.0_genomic"
+    
+    output_path = os.path.join(GENOMIX_DATA_DIR,  SUB_DIR) #r"/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata"
+    check_dir_exists(output_path, _raise_error=False)
 
     stat_time = time.time()
     extract_seq_from_fasta(
         input_fa, 
         output_path, 
+        output_file_base_name=OUTPUT_FILE_BASE_NAME,
         num_proc = 16,
         re_partten_str = r"NC_\d*.\d* Homo sapiens isolate \w*\d* chromosome (\d*|\w), alternate assembly T2T-CHM13v2.0",
         test_chr=['22']
