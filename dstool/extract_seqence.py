@@ -36,6 +36,7 @@ MIN_SEQ_LENGTH = 20000
 def extract_seq_from_fasta(
     fasta_file: str,
     output_path: str,
+    output_file_base_name: str = None,
     num_proc = 16,
     re_partten_str = r"cluster_(\d*|\w)_contig_(\d*|\w)",
     test_chr: str = ['22']
@@ -66,8 +67,8 @@ def extract_seq_from_fasta(
     _type_
         _description_
     """
-
-    input_file_base_name = Path(fasta_file).stem
+    if output_file_base_name is None:
+        input_file_base_name = Path(fasta_file).stem
     fasta_sequences = SeqIO.parse(fasta_file, 'fasta')
     with mp.Pool(processes=num_proc) as pool:
         results = pool.starmap(
