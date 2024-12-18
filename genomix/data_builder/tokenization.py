@@ -316,9 +316,18 @@ class GenoMixTokenization:
                     for i_input_ids in result["input_ids"]:
                         f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
         del results
+
+        # change the file name in order to add the total_tokenized_lines into the file name
+        input_ids_fnames = os.path.splitext(input_ids_fname)
+        new_input_ids_fname = f"{input_ids_fnames[0]}-{total_tokenized_lines}{input_ids_fnames[1]}"
+        os.rename(input_ids_fname, new_input_ids_fname)
+        if save_attn_mask:
+            attention_mask_fnames = os.path.splitext(attention_mask_fname)
+            new_attention_mask_fname = f"{attention_mask_fnames[0]}-{total_tokenized_lines}{attention_mask_fnames[1]}"
+            os.rename(attention_mask_fname, new_attention_mask_fname)
         logger.info(f"Tokenized output files (lines = {total_tokenized_lines}) are saved to {save_path}")
 
-        # Combine the results
+        # Combine the results and return the results instead of writing to a file
         # tokenized_text = {'input_ids': [], 'attention_mask': []}
         # for result in results:
         #     tokenized_text['input_ids'].extend(result['input_ids'])
