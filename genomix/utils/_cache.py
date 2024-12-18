@@ -30,7 +30,7 @@ import logging
 import gzip
 import shutil
 
-from .constants import GENOMIX_CACHE_DATA_DIR, LARGE_FILE_SIZE
+from .constants import GENOMIX_DATA_DIR, LARGE_FILE_SIZE
 from .common import check_file_exists, check_dir_exists
 
 logger = logging.getLogger(__name__)
@@ -60,7 +60,7 @@ def _find_from_cache(
         if file not found
     """
     if cache_dir is None:
-        cache_dir = GENOMIX_CACHE_DATA_DIR
+        cache_dir = GENOMIX_DATA_DIR
     
     fname = _file_name(cache_dir, file_meta)
     if not check_file_exists(fname, _raise_error=False):
@@ -96,7 +96,7 @@ def _write_to_cache(
         True if save successfully, otherwise False
     """
     if cache_dir is None:
-        cache_dir = GENOMIX_CACHE_DATA_DIR
+        cache_dir = GENOMIX_DATA_DIR
     
     _cache_fname = _file_name(cache_dir, file_meta)
 
