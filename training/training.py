@@ -40,19 +40,28 @@ from transformers.utils import check_min_version
 from transformers.trainer_utils import get_last_checkpoint
 
 sys.path.append('..')
-from genomix.trainer.training_config import GenoMixCausalLMTrainingConfig
+
+from training.training_config import (
+    GenoMixDataConfig,
+    GenoMixCausalLMTrainingConfig
+)
+
 from genomix.data_builder.tokenization import GenoMixTokenizationConfig, GenoMixTokenization
-from genomix.data_builder.datasets import GenoMixDataIterableDatasetV1
+from genomix.data_builder.datasets import (
+    GenoMixDataIterableDatasetV1,
+    GenoMixDataIterableDatasetV2,
+)
 
 logger = logging.getLogger(__name__)
 
 
 def main():
     parser = HfArgumentParser((
+        GenoMixDataConfig,
         GenoMixCausalLMTrainingConfig,
     ))
 
-    training_args = parser.parse_args_into_dataclasses()[0]
+    data_config, training_args = parser.parse_args_into_dataclasses()
 
     # Setup logging
     logging.basicConfig(
@@ -94,27 +103,29 @@ def main():
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
     
-    ########################################
+    ################################################################################
     # load tokenizer
-    ########################################
+    ################################################################################
     tokenization = GenoMixTokenization(
         GenoMixTokenizationConfig(
         tokenizer_type = 'CHAR_TOKEN',
         # for tokenizer initialization
         model_max_length = 1024,
     ))
-    tokenizer = tokenization.get_tokenizer()
+    # This is only used for save the tokenizer once the training is done.
+    # because we have already tokenized the data, we don't need to train the tokenizer
+    tokenizer = tokenization.get_tokenizer() 
 
     with training_args.main_process_first(desc="loading tokenized data"):
         trn_dat = GenoMixDataIterableDatasetV1(
-            '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/chm13t2t-train-input_ids.txt',
+            data_config.input_train_tokenized_input_ids_file,
         )
         tst_dat = GenoMixDataIterableDatasetV1(
-            '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/chm13t2t-test-input_ids.txt',
+            data_config.input_test_tokenized_input_ids_file,
         )
     
     
-    
+
 
 
 if __name__ == "__main__":
