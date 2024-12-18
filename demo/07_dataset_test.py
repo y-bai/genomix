@@ -72,10 +72,18 @@ if __name__ == "__main__":
     #     #     print(y[:10])
     #     if i > 1:
     #         break
-
+    data_list = []
     for i, i_data in enumerate(iter_ds):
-        print(i_data)
-        if i > 2:
+        data_list.append(i_data)
+        if i > 100:
+            break
+    dtloader = DataLoader(data_list, batch_size=4, num_workers=4, collate_fn=GenoMixDataCollatorForLanguageModeling())
+    for i, x in enumerate(dtloader):
+        print(x)
+        print(x['input_ids'].shape)
+        # for y in x['input_ids']:
+        #     print(y[:10])
+        if i > 1:
             break
         
 
