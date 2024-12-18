@@ -26,6 +26,7 @@
 import sys
 import os
 import logging
+import glob
 import time
 
 import warnings
@@ -39,13 +40,10 @@ sys.path.append('..')
 
 from genomix.data_builder.datasets import GenoMixDataIterableDatasetV1, GenoMixDataIterableDatasetV2
 from genomix.data_builder.data_collator import GenoMixDataCollatorForLanguageModeling
+from genomix.utils.constants import GENOMIX_DATA_DIR
+from genomix.utils.common import cal_memory_usage
 
 logger = logging.getLogger(__name__)
-
-def cal_memory_usage():
-    import psutil
-    process = psutil.Process(os.getpid())
-    return process.memory_info().rss / 1024 / 1024 # MB
 
 if __name__ == "__main__":
     # Setup logging
@@ -56,17 +54,31 @@ if __name__ == "__main__":
         level=logging.INFO
     )
 
+    SUB_DIR = "chm13-t2t"
+    OUTPUT_FILE_BASE_NAME = "GCF_009914755.1_T2T-CHM13v2.0_genomic"
+
+    input_ids_files = glob.glob(os.path.join(
+        GENOMIX_DATA_DIR, 
+        f"{SUB_DIR}/{OUTPUT_FILE_BASE_NAME}_TRAIN-input_ids*.txt"
+    ))
     stat_time = time.time()
     iter_ds = GenoMixDataIterableDatasetV1(
-        '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/chm13t2t-train-input_ids.txt',
+        input_ids_files[0],
     ) 
-    dtloader = DataLoader(iter_ds, batch_size=4, num_workers=4, collate_fn=GenoMixDataCollatorForLanguageModeling())
-    for i, x in enumerate(dtloader):
-        print(x)
-        # for y in x['input_ids']:
-        #     print(y[:10])
-        if i > 1:
+    # dtloader = DataLoader(iter_ds, batch_size=4, num_workers=4, collate_fn=GenoMixDataCollatorForLanguageModeling())
+    # for i, x in enumerate(dtloader):
+    #     print(x)
+    #     # for y in x['input_ids']:
+    #     #     print(y[:10])
+    #     if i > 1:
+    #         break
+
+    for i, i_data in enumerate(iter_ds):
+        print(i_data)
+        if i > 2:
             break
+        
+
     end_time = time.time()
 
     logger.info(f'Memory usage: {cal_memory_usage():.2f} MB')
