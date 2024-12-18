@@ -27,8 +27,6 @@ import os
 from typing import Any, Dict, List, Mapping, NewType, Optional, Sequence, Union
 import logging
 import itertools
-from queue import Queue
-from threading import Thread
 
 import torch
 import torch.distributed
@@ -46,12 +44,13 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
     """
     IterableDataset for handling large-scale data by read txt file line by line.
 
+    NOTE: We only handle one input text file, if you have multiple files, you need to merge them into one file.
+
     """
     def __init__(
         self,
         input_ids_fname: str, 
         input_mask_fname: Optional[str]=None,
-        # distributed_sampler: Optional[bool] = False
     ):
         """IterableDataset by reading txt file
 
@@ -63,6 +62,15 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
         super().__init__()
         self.input_ids_fname = input_ids_fname
         self.input_mask_fname = input_mask_fname
+        # get the total number of lines in the input file
+        n_line_str = self.input_ids_fname.split('-')[-1].strip()
+        if n_line_str.isnumeric():
+            self.total_examples = int(n_line_str)
+            self.can_distributed_sample = True
+        else:
+            self.total_examples = -1
+            self.can_distributed_sample = False
+        
         # self.distributed_sampler = distributed_sampler
         # with open(input_txt_fname, 'r') as f:
         #     self.total_lines = sum(1 for _ in f)
@@ -78,47 +86,13 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
                 input_ids = input_ids.strip()
             )
     
-    # def __iter__(self):
-
-    #     worker_info = torch.utils.data.get_worker_info()
-    #     worker_id = worker_info.id if worker_info is not None else 0
-    #     worker_total_num = worker_info.num_workers if worker_info is not None else 1
-
-    #     if self.input_mask_fname is not None:
-    #         ids_itr = open(self.input_ids_fname, 'r')
-    #         mask_itr = open(self.input_mask_fname, 'r')
-    #     else:
-    #         ids_itr = open(self.input_ids_fname, 'r')
-    #         mask_itr = None
-
-    #     queue = Queue()
-
-    #     def enqueue_lines():
-    #         for idx, line in enumerate(ids_itr):
-    #             if idx % worker_total_num == worker_id:
-    #                 if mask_itr is not None:
-    #                     mask_line = next(mask_itr)
-    #                     queue.put((idx, self._process(line, mask_line)))
-    #                 else:
-    #                     queue.put((idx, self._process(line)))
-
-    #     thread = Thread(target=enqueue_lines)
-    #     thread.start()
-
-    #     while thread.is_alive() or not queue.empty():
-    #         if not queue.empty():
-    #             yield queue.get()[1]
-    #     ids_itr.close()
-    #     if mask_itr is not None:
-    #         mask_itr.close()
-    
-    #
     # NOTE: The output order is not guaranteed to match the input order, depending on the order of the workers.
     def __iter__(self):
         worker_info = torch.utils.data.get_worker_info()
         worker_id = worker_info.id if worker_info is not None else 0
         worker_total_num = worker_info.num_workers if worker_info is not None else 1
 
+        # TODO: There could be protential issue as the file handler is not closed
         if self.input_mask_fname is not None:
             ids_itr = open(self.input_ids_fname, 'r')
             mask_itr = open(self.input_mask_fname, 'r')
@@ -132,6 +106,7 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
         
         mapped_itr = itertools.islice(mapped_itr, worker_id, None, worker_total_num)
         
+        # TODO: We will implement the distributed sampler later
         # if not self.distributed_sampler:
         #     # Add multiworker functionality
         #     mapped_itr = itertools.islice(mapped_itr, worker_id, None, worker_total_num)
@@ -146,11 +121,11 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
         #     )
         return mapped_itr
     
-    # def __len__(self):
-    #     # Caveat: When using DistributedSampler, we need to know the number of samples in our dataset!
-    #     # Hence, we need to implement `__len__`.
-    #     # https://github.com/Lightning-AI/pytorch-lightning/issues/15734
-    #     return self.total_lines
+    def __len__(self):
+        # Caveat: When using DistributedSampler, we need to know the number of samples in our dataset!
+        # Hence, we need to implement `__len__`.
+        # https://github.com/Lightning-AI/pytorch-lightning/issues/15734
+        return self.total_examples
 
 class GenoMixDataIterableDatasetV2(torch.utils.data.IterableDataset):
     """
