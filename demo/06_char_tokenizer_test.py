@@ -34,13 +34,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 sys.path.append('..')
 
 from genomix.data_builder.tokenization import GenoMixTokenizationConfig, GenoMixTokenization
+from genomix.utils.constants import GENOMIX_DATA_DIR
+from genomix.utils.common import cal_memory_usage
 
 logger = logging.getLogger(__name__)
-
-def cal_memory_usage():
-    import psutil
-    process = psutil.Process(os.getpid())
-    return process.memory_info().rss / 1024 / 1024 # MB
 
 if __name__ == "__main__":
     # Setup logging
@@ -51,17 +48,24 @@ if __name__ == "__main__":
         level=logging.INFO
     )
 
+    SUB_DIR = "chm13-t2t"
+    OUTPUT_FILE_BASE_NAME = "GCF_009914755.1_T2T-CHM13v2.0_genomic"
+
     stat_time = time.time()
+
+    # define the tokenization with configuration
     tokenization = GenoMixTokenization(GenoMixTokenizationConfig())
+
     tokenization.tokenize_with_text_file(
-        '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/GCF_009914755.1_T2T-CHM13v2.0_genomic_TEST.txt',
+        os.path.join(GENOMIX_DATA_DIR, f"{SUB_DIR}/{OUTPUT_FILE_BASE_NAME}_TRAIN.txt"), # '/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata/GCF_009914755.1_T2T-CHM13v2.0_genomic_TEST.txt',
         stride = 16, # overlap between chunks
         token_min_ctx_fraction=1.0,
         batch_size = None,
         num_proc = 16,
         disable_tqdm = False,
-        save_path = "/home/share/huadjyin/home/baiyong01/projects/genomix/tmp/testdata",
-        save_file_prefix="chm13t2t-test"
+        save_path = os.path.join(GENOMIX_DATA_DIR, SUB_DIR),
+        save_file_prefix=f"{OUTPUT_FILE_BASE_NAME}_TRAIN",
+        save_attn_mask = True,
     )
     end_time = time.time()
     logger.info(f'Memory usage: {cal_memory_usage():.2f} MB')
