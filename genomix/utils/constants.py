@@ -61,13 +61,14 @@ SPM_VOCAB_MODEL_PREFIX = "spm_vocab"
 INITIAL_ALPHABETS = list("ACGTN")
 
 GENOMIX_HOME = os.getenv('GENOMIX_HOME', os.path.expanduser('~/.genomix'))
+GENOMIX_DATA_DIR = os.path.join(GENOMIX_HOME, 'data')
+GENOMIX_OTHER_DIR = os.path.join(GENOMIX_HOME, 'other')
 GENOMIX_CACHE_DIR = os.path.join(os.path.expanduser('~/.cache'), 'genomix')
-GENOMIX_CACHE_DATA_DIR = os.path.join(GENOMIX_HOME, 'data')
-GENOMIX_CACHE_OTHER_DIR = os.path.join(GENOMIX_HOME, 'other')
+
 _make_dir_if_not_exists(GENOMIX_HOME)
 _make_dir_if_not_exists(GENOMIX_CACHE_DIR)
-_make_dir_if_not_exists(GENOMIX_CACHE_DATA_DIR)
-_make_dir_if_not_exists(GENOMIX_CACHE_OTHER_DIR)
+_make_dir_if_not_exists(GENOMIX_DATA_DIR)
+_make_dir_if_not_exists(GENOMIX_OTHER_DIR)
 
 # the size to be viewed as large file
 LARGE_FILE_SIZE = 1024 * 1024 * 500  # 500MB
