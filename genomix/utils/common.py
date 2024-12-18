@@ -61,7 +61,7 @@ def check_file_exists(f_name, _raise_error=True):
 def check_dir_exists(dir_path, create=True, _raise_error=True):
     if not os.path.exists(dir_path):
         if create:
-            print(f'{dir_path} not existing, create a new one.')
+            logger.info(f'{dir_path} not existing, create a new one.')
             os.makedirs(dir_path)
             return dir_path
         else:
@@ -248,5 +248,10 @@ def _parallel_read_txt(file_name: str, batch_size: int = 5000, n_proc: int = 16)
     # Flatten the list of results
     flattened_results = [item for sublist in results for item in sublist]
     return flattened_results
+
+def cal_memory_usage():
+    import psutil
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / 1024 / 1024 # MB
     
 
