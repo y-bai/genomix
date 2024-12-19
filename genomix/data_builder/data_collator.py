@@ -39,7 +39,15 @@ class GenoMixDataCollatorForLanguageModeling:
 
     Take a list of samples from a Dataset and collate them into a batch.
 
+    ##
+    # NOTE: DataCollatorForLanguageModeling will do the following:
+    # labels = batch['input_ids'].clone()
+    # labels[labels == self.pad_token_id] = -100
+
     """
+    def __init__(self, pad_token_id):
+        self.pad_token_id = pad_token_id
+
     def __call__(self, examples: List[InputDataClass]):
         """
         Collate the list of samples into a batch.
@@ -70,5 +78,10 @@ class GenoMixDataCollatorForLanguageModeling:
                 ], dtype=torch.long)
             else:
                 raise ValueError(f"Unsupported type: {type(v)}")
+
+        labels = batch["input_ids"].clone()
+        labels[labels == self.pad_token_id] = -100
+        batch['labels'] = labels
+        
         return batch
                 
