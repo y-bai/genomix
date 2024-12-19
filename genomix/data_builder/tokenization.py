@@ -147,6 +147,7 @@ class GenoMixTokenization:
             configuration for tokenization
 
         """
+        self._config = config
         config_dict = copy.deepcopy(config).to_dict()
         tokenizer_type = config_dict.pop("tokenizer_type", None)
         tokenizer_pretrained_model_path = config_dict.pop("tokenizer_pretrained_model_path", None)
@@ -171,11 +172,15 @@ class GenoMixTokenization:
         # we treat the pad_token as the eos_token
         _tokenizer.pad_token = _tokenizer.eos_token
 
-        self.tokenizer = _tokenizer
+        self._tokenizer = _tokenizer
 
-
-    def get_tokenizer(self):
-        return self.tokenizer
+    @property
+    def tokenizer(self):
+        return self._tokenizer
+    
+    @property
+    def config(self):
+        return self._config
     
     
     def tokenize_with_dataset(
