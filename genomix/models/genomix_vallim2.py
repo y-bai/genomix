@@ -312,7 +312,10 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         return GenoMixModelOutput(last_hidden_state=hidden_states)
 
 
-
+# bio-directional: https://github.com/state-spaces/mamba/pull/52/commits/8d8447859388940ca8a6ee19859e030ecb0f1ad2
+# https://github.com/state-spaces/mamba/pull/52/files/52f57d66f8d6d02a73b1e38f5f3708eb8ccfa39c#diff-3dbedfb31e9f491a970f12c007c2a965f19eb256116972bd67d2211d9a9cdd62
+# https://arxiv.org/pdf/2404.15772
+# https://seunghan96.github.io/ts/mamba/(paper)BiMAMBA/
 class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = []
 
@@ -355,12 +358,12 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
         """
         model_output = self.backbone(input_ids, inference_params=inference_params, **mixer_kwargs)
 
-        hidden_states = model_output.hidden_states
-        logits = self.lm_head(hidden_states.to(self.lm_head.weight.dtype)).float()
+        last_hidden_state = model_output.last_hidden_state
+        logits = self.lm_head(last_hidden_state.to(self.lm_head.weight.dtype)).float()
 
         return GenoMixForCausalLMOutput(
             logits=logits,
-            hidden_states=model_output.hidden_states,
+            last_hidden_state=model_output.last_hidden_state,
         )
 
 
