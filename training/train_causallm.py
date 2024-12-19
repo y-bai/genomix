@@ -177,6 +177,7 @@ def main():
             # NOTE: This will discard the first element if your outputs is not a dictionary. 
             # My original outputs is a tensor and I wrap it to a dictionary to solve the question.
             #
+
             return logits.argmax(dim=-1)
         
         metric_acc = evaluate.load("metrics/accuracy")
@@ -281,7 +282,7 @@ def main():
         train_dataset=trn_dat if training_args.do_train else None,
         eval_dataset=tst_dat if training_args.do_eval else None,
         processing_class=tokenization.tokenizer,
-        data_collator=GenoMixDataCollatorForLanguageModeling(),
+        data_collator=GenoMixDataCollatorForLanguageModeling(pad_token_id=tokenization.tokenizer.pad_token_id),
         compute_metrics=compute_metrics if training_args.do_eval else None,
         preprocess_logits_for_metrics=preprocess_logits if training_args.do_eval else None,
     )
@@ -310,14 +311,11 @@ def main():
         trainer.save_metrics("train", metrics)
         trainer.save_state()
 
+
     # Evaluation
     if training_args.do_eval:
 
         logger.info(">>> GenoMix Start evaluation......")
-
-        for batch in trainer.get_eval_dataloader(tst_dat):
-            print(batch)
-            break
 
         metrics = trainer.evaluate()
 
