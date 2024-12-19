@@ -126,7 +126,7 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
 
     # for debug
     max_train_samples: Optional[int] = field(
-        default=100,
+        default=1000,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of training examples to this "
@@ -136,7 +136,7 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
     )
     
     max_eval_samples: Optional[int] = field(
-        default=100,
+        default=1000,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
