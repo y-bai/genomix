@@ -65,12 +65,13 @@ class GenoMixCausalLMTrainer(Trainer):
         # t_start = time.time()
         inputs = self._prepare_inputs(inputs) # inputs is a dict with keys: ['input_ids']
 
-        labels = inputs['input_ids'].clone()
-        labels[labels == self.tokenizer.pad_token_id] = -100
+        input_ids = inputs.pop('input_ids')
+        labels = inputs.pop('labels')
 
         if self.args.fp16:
             with torch.autocast(self.args.device.type):
-                outputs = model(**inputs)
+                # outputs = model(**inputs)
+                outputs = model(input_ids=input_ids)
 
                 shift_logits = outputs["logits"][:, :-1, :].contiguous()
                 shift_labels = labels[:, 1:].contiguous()
@@ -87,7 +88,8 @@ class GenoMixCausalLMTrainer(Trainer):
                 #     shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
                 #     shift_labels.view(-1).contiguous())
         else:
-            outputs = model(**inputs)
+            # outputs = model(**inputs)
+            outputs = model(input_ids=input_ids)
 
             shift_logits = outputs["logits"][:, :-1, :].contiguous()
             shift_labels = labels[:, 1:].contiguous()
