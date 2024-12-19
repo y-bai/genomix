@@ -43,7 +43,8 @@ class GenoMixCausalLMTrainer(Trainer):
         )
 
     # override the compute_loss function
-    def compute_loss(self, model, inputs, return_outputs=False):
+    # https://github.com/huggingface/transformers/blob/052e652d6d53c2b26ffde87e039b723949a53493/src/transformers/trainer.py#L3618
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Compute the loss for the given inputs.
 
@@ -60,7 +61,7 @@ class GenoMixCausalLMTrainer(Trainer):
 
         """
         # t_start = time.time()
-        inputs = self._prepare_inputs(inputs) 
+        inputs = self._prepare_inputs(inputs) # inputs is a dict with keys: ['input_ids']
 
         labels = inputs['input_ids'].clone()
         labels[labels == self.tokenizer.pad_token_id] = -100
@@ -69,19 +70,31 @@ class GenoMixCausalLMTrainer(Trainer):
             with torch.autocast(self.args.device.type):
                 outputs = model(**inputs)
 
-                shift_logits = outputs["logits"][:, :-1, :]
-                shift_labels = labels[:, 1:]
+                shift_logits = outputs["logits"][:, :-1, :].contiguous()
+                shift_labels = labels[:, 1:].contiguous()
+
                 loss = self.loss_fn(
-                    shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
-                    shift_labels.view(-1).contiguous())
+                    shift_logits.view(-1, shift_logits.size(-1)), 
+                    shift_labels.view(-1))
+
+                ## NOTE: The following code will introduce issue of 
+                ## "RuntimeError: view size is not compatible with input tensor's size and stride"
+                # shift_logits = outputs["logits"][:, :-1, :]
+                # shift_labels = labels[:, 1:]
+                # loss = self.loss_fn(
+                #     shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
+                #     shift_labels.view(-1).contiguous())
         else:
             outputs = model(**inputs)
 
-            shift_logits = outputs["logits"][:, :-1, :]
-            shift_labels = labels[:, 1:]
+            shift_logits = outputs["logits"][:, :-1, :].contiguous()
+            shift_labels = labels[:, 1:].contiguous()
+
+            y = shift_logits.view(-1, shift_logits.size(-1))
+
             loss = self.loss_fn(
-                shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
-                shift_labels.view(-1).contiguous())
+                shift_logits.view(-1, shift_logits.size(-1)), 
+                shift_labels.view(-1))
         
         # torch.cuda.current_stream().synchronize()  
         # t_seq_emd_end = time.time()
