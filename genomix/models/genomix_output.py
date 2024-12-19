@@ -64,5 +64,5 @@ class GenoMixForCausalLMOutput(ModelOutput):
     """
 
     logits: Optional[torch.FloatTensor] = None
-    hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    last_hidden_state: Optional[Tuple[torch.FloatTensor]] = None
 
