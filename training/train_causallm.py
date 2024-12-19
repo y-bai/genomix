@@ -144,7 +144,7 @@ def main():
             data_list = []
             for i, i_data in enumerate(trn_dat):
                 data_list.append(i_data)
-                if i >= training_args.max_train_samples:
+                if i > training_args.max_train_samples:
                     break
             trn_dat = data_list
     if training_args.do_eval:
@@ -152,7 +152,7 @@ def main():
             data_list = []
             for i, i_data in enumerate(tst_dat):
                 data_list.append(i_data)
-                if i >= training_args.max_eval_samples:
+                if i > training_args.max_eval_samples:
                     break
             tst_dat = data_list
         
@@ -280,7 +280,7 @@ def main():
         args=training_args,
         train_dataset=trn_dat if training_args.do_train else None,
         eval_dataset=tst_dat if training_args.do_eval else None,
-        tokenizer=tokenization.tokenizer,
+        processing_class=tokenization.tokenizer,
         data_collator=GenoMixDataCollatorForLanguageModeling(),
         compute_metrics=compute_metrics if training_args.do_eval else None,
         preprocess_logits_for_metrics=preprocess_logits if training_args.do_eval else None,
@@ -304,7 +304,7 @@ def main():
         #     training_args.max_train_samples if training_args.max_train_samples is not None else len(trn_pt_ds)
         # )
 
-        # metrics["train_samples"] = min(max_train_samples, len(trn_pt_ds))
+        metrics["train_samples"] = training_args.max_train_samples
 
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
@@ -315,11 +315,15 @@ def main():
 
         logger.info(">>> GenoMix Start evaluation......")
 
+        for batch in trainer.get_eval_dataloader(tst_dat):
+            print(batch)
+            break
+
         metrics = trainer.evaluate()
 
         # max_eval_samples = training_args.max_eval_samples if training_args.max_eval_samples is not None else len(training_args)
         
-        # metrics["eval_samples"] = min(max_eval_samples, len(val_pt_ds))
+        metrics["eval_samples"] = training_args.max_eval_samples
         
         try:
             perplexity = math.exp(metrics["eval_loss"])
