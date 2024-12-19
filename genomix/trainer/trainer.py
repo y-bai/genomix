@@ -23,9 +23,11 @@
 
 """
 import time
+from typing import Optional
 import torch
 from transformers import Trainer
 from transformers.optimization import get_scheduler
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 class GenoMixCausalLMTrainer(Trainer):
 
@@ -128,6 +130,11 @@ class GenoMixCausalLMTrainer(Trainer):
             self._created_lr_scheduler = True
 
         return self.lr_scheduler
+    
+    @property
+    def tokenizer(self) -> Optional[PreTrainedTokenizerBase]:
+        # logger.warning("Trainer.tokenizer is now deprecated. You should use Trainer.processing_class instead.")
+        return self.processing_class
     
     # To solve the issue:
     # RuntimeError: Some tensors share memory, this will lead to duplicate memory on disk and potential 
