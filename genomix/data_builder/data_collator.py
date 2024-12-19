@@ -45,7 +45,7 @@ class GenoMixDataCollatorForLanguageModeling:
     # labels[labels == self.pad_token_id] = -100
 
     """
-    def __init__(self, pad_token_id):
+    def __init__(self, pad_token_id=1):
         self.pad_token_id = pad_token_id
 
     def __call__(self, examples: List[InputDataClass]):
