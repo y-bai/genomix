@@ -30,6 +30,7 @@ from itertools import chain
 from typing import Any, Dict, List, Optional, Tuple, Union
 import logging
 import json
+import gc
 import multiprocessing as mp
 from tqdm import tqdm
 from datasets import IterableDataset, Dataset, IterableDatasetDict, DatasetDict
@@ -321,6 +322,7 @@ class GenoMixTokenization:
                     for i_input_ids in result["input_ids"]:
                         f_input_ids.write(','.join(map(str, i_input_ids)) + '\n')
         del results
+        gc.collect()
 
         # change the file name in order to add the total_tokenized_lines into the file name
         input_ids_fnames = os.path.splitext(input_ids_fname)
@@ -455,6 +457,7 @@ def _tokenize_chunk_txt(
 
         del tokenized_batch
         del concat_token_ids
+        gc.collect()
 
         return result_chunks
     
