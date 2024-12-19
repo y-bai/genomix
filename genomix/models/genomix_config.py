@@ -35,11 +35,90 @@ https://github.com/state-spaces/mamba/issues/347
 
 """
 
+from dataclasses import dataclass, field
+from typing import Any, Optional, Tuple
 from transformers import PretrainedConfig
 
+@dataclass
+class _GenoMixMamba2BaseConfig:
+
+    def to_dict(self):
+        return self.__dict__
+
+@dataclass
+class GenoMixMamba2SSMConfig(_GenoMixMamba2BaseConfig):
+    d_state: int = 64          # SSM state expansion factor, (`N` in [1] Algorithm 2), typically 64 or 128 
+    headdim: int = 32          # must d_model/headdim%8==0, default 64 in mamba2，should be small
+
+    d_conv: int = 4            # default 4 in mamba2, no need to change
+
+    # init for conv layer, no need to change
+    # nn.init.uniform_(self.conv1d.weight, -self.conv_init, self.conv_init)
+    conv_init: Optional[float] = field(default=None)          
+    expand: int = 2            # default 2 in mamba2, no need to change
+    
+    # https://github.com/state-spaces/mamba/issues/360
+    # self.d_ssm % self.headdim == 0
+    # if d_ssm is None, d_ssm = d_model * expand
+    d_ssm: Optional[int] = field(default=None)  # the dimension of D matrix, if None, we only apply SSM on this dimensions, the rest uses gated          
+
+    ngroups: int = 1           # default 1 in mamba2, no need to change
+    A_init_range: Optional[Tuple] = field(default=(1, 16))     # default (1, 16) in mamba2, no need to change
+    D_has_hdim: bool = False   # default False in mamba2, no need to change
+    rmsnorm: bool = True       # default True in mamba2, no need to change
+    norm_before_gate: bool = False  # default False in mamba2, no need to change
+    dt_min: float = 0.001      # dt: delta time, (ie., time step), default 0.001 in mamba2, no need to change
+    dt_max: float = 0.1        # default 0.1 in mamba2, no need to change
+    dt_init_floor: float = 1e-4  # default 1e-4 in mamba2, no need to change
+    dt_limit: Optional[Tuple] = field(default=(0.0, float("inf")))    # default (0.0, float("inf")) in mamba2, no need to change
+    bias: bool = False         # default False in mamba2, no need to change
+    conv_bias: bool = True     # default True in mamba2, no need to change
+    
+    # Fused kernel and sharding options
+    #
+    chunk_size: int = 256          # default 256 in mamba2, no need to change
+    use_mem_eff_path: bool = True  # default True in mamba2, no need to change
+    # default None in mamba2, no need to change
+    process_group: Optional[Any] = field(default=None)    # used for distributed training, like world_size and rank       
+    sequence_parallel: bool = True # default True in mamba2, no need to change
+
+@dataclass
+class GenoMixMamba2AttnConfig(_GenoMixMamba2BaseConfig):
+    num_heads: int = 8
+    # see https://github.com/lucidrains/RETRO-pytorch/blob/main/retro_pytorch/retro_pytorch.py
+    rotary_emb_dim: int = 32    # rotary_emb_dim = min(dim_head, MIN_DIM_HEAD), where MIN_DIM_HEAD = 32 
+    causal: bool = True 
+
+    # If None, use embed_dim // num_heads, no need to change, where embed_dim = d_model, eg., 256
+    head_dim: Optional[int] = field(default=None)            
+    
+    d_conv: int = 4             # if > 0, use nn.Conv1d in MHA, no need to change
+    out_proj_bias: bool = False
+    qkv_proj_bias: bool = False
+
+@dataclass
+class GenoMixMamba2MoEConfig(_GenoMixMamba2BaseConfig):
+    pass
+
+
+@dataclass
+class GenoMixMamba2DownUpSampleConfig(_GenoMixMamba2BaseConfig):
+    pass
+
+
+@dataclass
+class GenoMixInputEmbeddingConfig(_GenoMixMamba2BaseConfig):
+    use_tabular_embedding: bool = False
+    fusion_type: str = "add"
+
+
+@dataclass
+class GenoMixMamba2InitializerConfig(_GenoMixMamba2BaseConfig):
+    initializer_range: float = 0.1
+    rescale_prenorm_residual: bool = True
+
+
 class GenoMixMamba2Config(PretrainedConfig):
-
-
     model_type = "genomix-mamba2"
 
     def __init__(
@@ -47,7 +126,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         vocab_size: int = 16,
         d_model: int = 256,
         d_intermediate: int=256*3,  # MLP hidden size
-        mlp_attn_only: bool = True, # If d_intermediate > 0, use GatedMLP(feedforward) layer only when using attention layer
+        mlp_attn_only: bool = True, # If d_intermediate > 0, use GatedMLP(feedforward) layer only when there is a attention layer
         n_layers: int=16,
 
         pad_token_id=2, # pad_token_id=eos_token_id
@@ -57,7 +136,10 @@ class GenoMixMamba2Config(PretrainedConfig):
         attn_layer_idx=[],
         moe_layer_idx=[],
 
-        pad_vocab_size_multiple: int = 8,   # for falsh attention
+        pad_vocab_size_multiple: int = 8,   # for falsh attention, no need to change
+
+        down_up_sample: bool = False,
+        down_up_sample_cfg=None,
 
         # for float value embedding
         input_embedding_cfg={
@@ -89,6 +171,7 @@ class GenoMixMamba2Config(PretrainedConfig):
             "dt_limit": (0.0, float("inf")),    # default (0.0, float("inf")) in mamba2, no need to change
             "bias": False,          # default False in mamba2, no need to change  
             "conv_bias": True,      # default True in mamba2, no need to change
+            
             # Fused kernel and sharding options
             # https://github.com/state-spaces/mamba/issues/449
             "chunk_size": 256,          # default 256 in mamba2, no need to change
@@ -110,7 +193,9 @@ class GenoMixMamba2Config(PretrainedConfig):
             "qkv_proj_bias": False,         # no neeed to change
                
         },
+
         moe_cfg=None,
+
         initializer_cfg={
             "initializer_range": 0.1,           # default 0.2 in mamba2, no need to change
             "rescale_prenorm_residual": True,  # default False in mamba2, no need to change
@@ -167,6 +252,12 @@ class GenoMixMamba2Config(PretrainedConfig):
         pad_vocab_size_multiple : int, optional
             the multiple of pad_vocab_size, by default 8, or 16
             see https://huggingface.co/state-spaces/mamba2-130m/blob/main/config.json
+        
+        down_up_sample : bool, optional
+            used for down/up sampling for long sequence, by default False
+        
+        down_up_sample_cfg : dict, optional
+            the parameters for down/up sampling, by default None
         
         input_embedding_cfg : dict, optional
             by default 
@@ -261,6 +352,9 @@ class GenoMixMamba2Config(PretrainedConfig):
         self.moe_layer_idx = moe_layer_idx
 
         self.pad_vocab_size_multiple = pad_vocab_size_multiple
+
+        self.down_up_sample = down_up_sample
+        self.down_up_sample_cfg = down_up_sample_cfg
     
         self.ssm_cfg = ssm_cfg
         self.attn_cfg = attn_cfg
