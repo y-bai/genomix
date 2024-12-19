@@ -136,7 +136,30 @@ except ImportError:
 
 #     return block
 
-
+##
+# NOTE: Triton with catch FileNotFoundError: 
+# [rank3]:   File "/home/share/huadjyin/home/baiyong01/.conda/envs/py10/lib/python3.10/site-packages/triton/runtime/cache.py", line 109, in put
+# [rank3]:     os.replace(temp_path, filepath)
+# [rank3]: FileNotFoundError: [Errno 2] No such file or directory: '/home/share/huadjyin/home/baiyong01/.triton/cache/8c4cc4f09876dc2a96c889dd587edceb/_state_passing_bwd_kernel.llir.tmp.pid_1010641_731384' -> '/home/share/huadjyin/home/baiyong01/.triton/cache/8c4cc4f09876dc2a96c889dd587edceb/_state_passing_bwd_kernel.llir'
+#
+#  resolved  by: 
+# https://github.com/triton-lang/triton/issues/2688
+# https://github.com/triton-lang/triton/issues/4002
+# https://discuss.pytorch.org/t/torch-compile-when-home-is-a-read-only-filesystem/198961/12
+# 
+##
+# This is similar to the following issue:
+# Problem: when using huggingface datasets.map(), it raise: OSError: [Errno 16] Device or resource busy: '.__dpc000000007f6b48cc00007b76'.
+#   Google said it would be related to linux file system. And when running lsof +D ~/tmp, we found there has process id that is also using the 
+#   same file.
+# Solution:
+#   using the sytem tmp folder instead of the user tmp folder. ie. using /tmp instead of ~/tmp
+# 
+# Therefore, to resolve the Triton catch folder issue, we have to set the Triton cache folder to system-level folder.
+#
+### SOLUTION: 
+# export TMPDIR='/tmp'
+# export TRITON_CACHE_DIR='/tmp/.triton/cache'
 class GenoMixMamba2PreTrainedModel(PreTrainedModel):
     """An abstract class to handle weights initialization 
     and a simple interface for downloading and loading pretrained models. 
