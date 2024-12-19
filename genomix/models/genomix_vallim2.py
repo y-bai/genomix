@@ -30,6 +30,7 @@ https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/mamba2.py
 
 import math
 import logging
+from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -374,7 +375,13 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
     def allocate_inference_cache(self, batch_size, max_seqlen, dtype=None, **kwargs):
         return self.backbone.allocate_inference_cache(batch_size, max_seqlen, dtype=dtype, **kwargs)
 
-    def forward(self, input_ids, position_ids=None, inference_params=None, **mixer_kwargs):
+    def forward(
+            self, 
+            input_ids: Optional[torch.LongTensor] = None, 
+            position_ids: Optional[torch.LongTensor] = None, 
+            inference_params=None, 
+            **mixer_kwargs
+        ):
         """
         "position_ids" is just to be compatible with Transformer generation. We don't use it.
         num_last_tokens: if > 0, only return the logits for the last n tokens
