@@ -53,6 +53,7 @@ from genomix.data_builder.tokenization import GenoMixTokenizationConfig, GenoMix
 from genomix.data_builder.datasets import (
     GenoMixDataIterableDatasetV1,
     GenoMixDataIterableDatasetV2,
+    GenoMixDataDataset,
 )
 from genomix.data_builder.data_collator import GenoMixDataCollatorForLanguageModeling
 
@@ -67,6 +68,8 @@ from genomix.models.genomix_config import (
     GenoMixMamba2InitializerConfig
 )
 from genomix.trainer.trainer import GenoMixCausalLMTrainer
+
+TRITON_CACHE_DIR = "/tmp/.triton/cache"
 
 logger = logging.getLogger(__name__)
 
@@ -132,13 +135,37 @@ def main():
     ))
 
     with training_args.main_process_first(desc="loading tokenized data"):
+        logger.info("calculate total input samples......")
+        n_trn_samples_str = data_config.input_train_tokenized_input_ids_file.split('-')[-1].strip()
+        if n_trn_samples_str.isnumeric():
+            n_trn_samples = int(n_trn_samples_str)
+        else:
+            with open(data_config.input_train_tokenized_input_ids_file, 'r') as f:
+                n_trn_samples = len(f.readlines())
+        logger.info(f"total training samples: {n_trn_samples}")
+
         trn_dat = GenoMixDataIterableDatasetV1(
             data_config.input_train_tokenized_input_ids_file,
+            total_examples = n_trn_samples,
         )
+        
+        n_tst_samples_str = data_config.input_test_tokenized_input_ids_file.split('-')[-1].strip()
+        if n_tst_samples_str.isnumeric():
+            n_tst_samples = int(n_tst_samples_str)
+        else:
+            with open(data_config.input_test_tokenized_input_ids_file, 'r') as f:
+                n_tst_samples = len(f.readlines())
+        logger.info(f"total testing samples: {n_tst_samples}")
+
+        # The following code will lead to Unkonwn number of samples
         tst_dat = GenoMixDataIterableDatasetV1(
             data_config.input_test_tokenized_input_ids_file,
+            total_examples = n_tst_samples,
         )
 
+        # tst_dat = GenoMixDataDataset(
+        #     data_config.input_test_tokenized_input_ids_file,
+        # )
     if training_args.do_train:
         if training_args.max_train_samples is not None:
             data_list = []
@@ -197,7 +224,7 @@ def main():
     ############################################################################
     # Here, we use the default configuration 
     d_model = 256
-    n_layers = 32
+    n_layers = 56
     ssm_headdim = 32
     assert d_model / ssm_headdim % 8 == 0, "d_model / ssm_headdim % 8 != 0"
     
@@ -222,10 +249,7 @@ def main():
     idx1 = np.arange(0, n_layers, interval)[1:]
     idx2 = np.arange(0, len(idx1))
     attn_idx = idx1 + idx2
-    if attn_idx[-1] >= n_layers:
-        attn_idx = attn_idx[:-1]
-
-    assert attn_idx[-1] < n_layers, "attn_idx[-1] >= n_layers"
+    attn_idx = attn_idx[attn_idx<n_layers]
     attn_layer_idx = attn_idx.tolist()
 
     logger.info(f"number of layers: {n_layers}, attn_layer_idx: {attn_layer_idx}")
@@ -261,6 +285,16 @@ def main():
         genomix_causallm_config
     )
 
+    #
+    # when calling torch.compile(), there raise an error:
+    # [rank8]:   File "/home/share/huadjyin/home/baiyong01/.conda/envs/py10/lib/python3.10/site-packages/torch/_inductor/runtime/hints.py", line 36, in <module>
+    # [rank8]:     attr_desc_fields = {f.name for f in fields(AttrsDescriptor)}
+    # [rank8]:   File "/home/share/huadjyin/home/baiyong01/.conda/envs/py10/lib/python3.10/dataclasses.py", line 1198, in fields
+    # [rank8]:     raise TypeError('must be called with a dataclass type or instance') from None
+    # [rank8]: TypeError: must be called with a dataclass type or instance
+    #
+    # opt_genomix_causallm_model = torch.compile(genomix_causallm_model, mode='max-autotune')
+
     logger.info(f"model: \n{genomix_causallm_model}")
     # logger.info(f"device: {genomix_causallm_model.device}")
     logger.info(f"num params: {genomix_causallm_model.num_parameters()}")
@@ -270,7 +304,6 @@ def main():
     logger.info(f"^^^^^^^^fp16 = {training_args.fp16}")
     logger.info(f"^^^^^^^^Learning rate: {training_args.learning_rate}")
     logger.info(f"^^^^^^^^LR scheduler type : {training_args.lr_scheduler_type}")
-
 
     ############################################################################
     # training
@@ -305,7 +338,7 @@ def main():
         #     training_args.max_train_samples if training_args.max_train_samples is not None else len(trn_pt_ds)
         # )
 
-        metrics["train_samples"] = training_args.max_train_samples
+        # metrics["train_samples"] = training_args.max_train_samples
 
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
@@ -321,7 +354,7 @@ def main():
 
         # max_eval_samples = training_args.max_eval_samples if training_args.max_eval_samples is not None else len(training_args)
         
-        metrics["eval_samples"] = training_args.max_eval_samples
+        # metrics["eval_samples"] = training_args.max_eval_samples
         
         try:
             perplexity = math.exp(metrics["eval_loss"])
@@ -339,6 +372,12 @@ def main():
 
 
 if __name__ == "__main__":
+    # just used for triton cache
+    # os.environ["TRITON_CACHE_DIR"] = TRITON_CACHE_DIR
+
+    # if not os.path.exists(TRITON_CACHE_DIR):
+    #     os.makedirs(TRITON_CACHE_DIR, mode=0o777, exist_ok=True)
+
     main()
 
 
