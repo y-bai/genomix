@@ -35,7 +35,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers import PreTrainedModel, Mamba2ForCausalLM, Mamba2Config
+from transformers import PreTrainedModel
 from transformers.generation.utils import GenerationMixin
 
 from .genomix_config import GenoMixMamba2Config
@@ -336,7 +336,7 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         return GenoMixModelOutput(last_hidden_state=hidden_states)
 
 
-# bio-directional: https://github.com/state-spaces/mamba/pull/52/commits/8d8447859388940ca8a6ee19859e030ecb0f1ad2
+# bi-directional: https://github.com/state-spaces/mamba/pull/52/commits/8d8447859388940ca8a6ee19859e030ecb0f1ad2
 # https://github.com/state-spaces/mamba/pull/52/files/52f57d66f8d6d02a73b1e38f5f3708eb8ccfa39c#diff-3dbedfb31e9f491a970f12c007c2a965f19eb256116972bd67d2211d9a9cdd62
 # https://arxiv.org/pdf/2404.15772
 # https://seunghan96.github.io/ts/mamba/(paper)BiMAMBA/
@@ -378,12 +378,13 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
     def forward(
             self, 
             input_ids: Optional[torch.LongTensor] = None, 
+            labels: Optional[torch.LongTensor] = None, 
             position_ids: Optional[torch.LongTensor] = None, 
             inference_params=None, 
             **mixer_kwargs
         ):
         """
-        "position_ids" is just to be compatible with Transformer generation. We don't use it.
+        "labels" and "position_ids" is just to be compatible with Transformers generation. We don't use it.
         num_last_tokens: if > 0, only return the logits for the last n tokens
         """
         model_output = self.backbone(input_ids, inference_params=inference_params, **mixer_kwargs)
