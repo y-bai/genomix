@@ -51,6 +51,7 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
         self,
         input_ids_fname: str, 
         input_mask_fname: Optional[str]=None,
+        total_examples: Optional[int]=None,
     ):
         """IterableDataset by reading txt file
 
@@ -62,18 +63,13 @@ class GenoMixDataIterableDatasetV1(torch.utils.data.IterableDataset):
         super().__init__()
         self.input_ids_fname = input_ids_fname
         self.input_mask_fname = input_mask_fname
-        # get the total number of lines in the input file
-        n_line_str = self.input_ids_fname.split('-')[-1].strip()
-        if n_line_str.isnumeric():
-            self.total_examples = int(n_line_str)
-            self.can_distributed_sample = True
-        else:
-            self.total_examples = -1
-            self.can_distributed_sample = False
-        
-        # self.distributed_sampler = distributed_sampler
-        # with open(input_txt_fname, 'r') as f:
-        #     self.total_lines = sum(1 for _ in f)
+        self.total_examples = total_examples
+
+        if total_examples is None:
+            logger.warning("The total number of examples is not provided, please make sure the input file name contains the total number of examples.")
+            # TODO: we need to implement the distributed sampler later
+            # and we need to know the number of samples in our dataset!
+            self.total_examples = 1000
     
     def _process(self, input_ids: str, input_mask: str=None) -> Dict[str, str]:
         if input_mask is not None:
