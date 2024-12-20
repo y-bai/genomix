@@ -27,7 +27,6 @@ https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/mamba2.py
 
 Mamba2 slower than mamba1:
 https://github.com/state-spaces/mamba/issues/355
-sovled by: warm up
 
 
 Mamba2 has only been tested with dim_model multiples of 512.
@@ -117,7 +116,7 @@ class GenoMixMamba2InitializerConfig(_GenoMixMamba2BaseConfig):
     initializer_range: float = 0.1
     rescale_prenorm_residual: bool = True
 
-
+@dataclass
 class GenoMixMamba2Config(PretrainedConfig):
     model_type = "genomix-mamba2"
 
@@ -160,7 +159,7 @@ class GenoMixMamba2Config(PretrainedConfig):
             # self.d_ssm % self.headdim == 0
             # if d_ssm is None, d_ssm = d_model * expand
             "d_ssm": None,          # the dimension of D matrix, if None, we only apply SSM on this dimensions, the rest uses gated
-            "ngroups": 1,           # default 1 in mamba2, no need to change
+            "ngroups": 1,           # Number of groups for group normalization, default 1 in mamba2, no need to change
             "A_init_range": (1, 16),# default (1, 16) in mamba2, no need to change
             "D_has_hdim": False,    # default False in mamba2, no need to change
             "rmsnorm": True,        # default True in mamba2, no need to change
