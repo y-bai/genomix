@@ -31,7 +31,7 @@ from transformers import TrainingArguments
 PRETRAIN_OUTPUT_DIR = os.path.join(os.path.expanduser('~'), "projects/genomix/model_output")
 PRETRAIN_LOG_DIR = os.path.join(PRETRAIN_OUTPUT_DIR, "log")
 
-BATCH_SIZE = 72
+BATCH_SIZE = 48 #72
 
 @dataclass
 class GenoMixCausalLMTrainingConfig(TrainingArguments):
@@ -61,7 +61,7 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
     max_steps:int = 60000  
     # num_train_epochs = 2  # https://discuss.huggingface.co/t/trainer-only-doing-3-epochs-no-matter-the-trainingarguments/19347/5
 
-    dataloader_num_workers: int = 4  # the number of processes per GPU to use for data loading
+    dataloader_num_workers: int = 8  # the number of processes per GPU to use for data loading
 
     per_device_train_batch_size: int = BATCH_SIZE
     per_device_eval_batch_size: int = BATCH_SIZE
@@ -120,13 +120,13 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
     #
     disable_tqdm: bool = True
 
-    tf32: bool = True
-    # fp16: bool = True
+    # tf32: bool = True
+    fp16: bool = True
     # gradient_checkpointing: bool = True
 
     # for debug
     max_train_samples: Optional[int] = field(
-        default=1000,
+        default=None,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of training examples to this "
@@ -136,7 +136,7 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
     )
     
     max_eval_samples: Optional[int] = field(
-        default=1000,
+        default=None,
         metadata={
             "help": (
                 "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
@@ -144,18 +144,4 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
             )
         },
     )
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
 
