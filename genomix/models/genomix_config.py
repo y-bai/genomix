@@ -106,6 +106,12 @@ class GenoMixMamba2DownUpSampleConfig(_GenoMixMamba2BaseConfig):
 
 
 @dataclass
+class GenoMixMamba2BiDirectionalConfig(_GenoMixMamba2BaseConfig):
+    bidirectional: bool = False
+    bidirectional_strategy: str = "add" # "concat", "add" or "ewmul"
+
+
+@dataclass
 class GenoMixInputEmbeddingConfig(_GenoMixMamba2BaseConfig):
     use_tabular_embedding: bool = False
     fusion_type: str = "add"
@@ -125,7 +131,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         vocab_size: int = 16,
         d_model: int = 256,
         d_intermediate: int=256*3,  # MLP hidden size
-        mlp_attn_only: bool = True, # If d_intermediate > 0, use GatedMLP(feedforward) layer only when there is a attention layer
+        mlp_attn_only: bool = True, # If d_intermediate > 0 and mlp_attn_only == True, use GatedMLP(feedforward) layer only when there is a attention layer
         n_layers: int=16,
 
         pad_token_id=2, # pad_token_id=eos_token_id
@@ -138,12 +144,17 @@ class GenoMixMamba2Config(PretrainedConfig):
         pad_vocab_size_multiple: int = 8,   # for falsh attention, no need to change
 
         down_up_sample: bool = False,
-        down_up_sample_cfg=None,
+        down_up_sample_cfg = None,
 
         # for float value embedding
         input_embedding_cfg={
             "use_tabular_embedding": False, 
             "fusion_type": "add",
+        },
+
+        bidirectional_cfg={
+            "bidirectional": False,
+            "bidirectional_strategy": "add", # "concat", "add" or "ewmul"
         },
 
         # Mamba2 block config
@@ -264,6 +275,12 @@ class GenoMixMamba2Config(PretrainedConfig):
                 "use_tabular_embedding": False, 
                 "fusion_type": "add",
             }
+        bidirectional_cfg : dict, optional
+            by default
+            {
+                "bidirectional": False,
+                "bidirectional_strategy": "add", # "concat", "add" or "ewmul"
+            }
 
         ssm_cfg : dict, optional
             the parameters for Mamba2 layer, by default
@@ -354,6 +371,8 @@ class GenoMixMamba2Config(PretrainedConfig):
 
         self.down_up_sample = down_up_sample
         self.down_up_sample_cfg = down_up_sample_cfg
+
+        self.bidirectional_cfg = bidirectional_cfg
     
         self.ssm_cfg = ssm_cfg
         self.attn_cfg = attn_cfg
