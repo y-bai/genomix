@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*-coding:utf-8 -*-
 """
-@File    :		genomix_vallinam2.py
+@File    :		genomix_modeling.py
 @Time    :   	2024/11/27 10:17:30
 @Author  :   	Yong Bai
 @Contact :   	baiyong at genomics.cn
