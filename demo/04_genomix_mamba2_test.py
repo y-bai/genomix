@@ -32,10 +32,10 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 sys.path.append('..')
 
-from genomix.models.genomix_vallim2 import GenoMixMamba2Model, GenoMixMamba2ForCausalLM
+from genomix.models.genomix_modeling import GenoMixMamba2Model, GenoMixMamba2ForCausalLM
 from genomix.models.genomix_config import GenoMixMamba2Config
-from dstool.tokenization import GenoMixTokenizationConfig, GenoMixTokenization
 from genomix.tokenizers.char_tokenizer import CharacterTokenizer
+from genomix.data_builder.tokenization import GenoMixTokenizationConfig, GenoMixTokenization
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +55,11 @@ def test_genomix_mamba2_model():
     n_layers = config.n_layers
     interval = 8
     idx1 = np.arange(0, n_layers, interval)[1:]
-    idx2 = np.arange(1, len(idx1)+1)
-    config.attn_layer_idx = (idx1 + idx2).tolist()
+    idx2 = np.arange(0, len(idx1))
+    idx = idx1 + idx2
+    if idx[-1] >= n_layers:
+        idx = idx[:-1]
+    config.attn_layer_idx = idx.tolist()
 
     logger.info(f"config: \n{config}")
 
