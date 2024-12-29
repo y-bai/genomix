@@ -36,9 +36,11 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from mamba_ssm.modules.mamba2 import Mamba2
+# from mamba_ssm.modules.mamba2 import Mamba2
 from mamba_ssm.modules.mha import MHA
 from mamba_ssm.modules.mlp import GatedMLP
+
+from .genomix_m2ext import GenoMixMamba2Extension
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +103,7 @@ class GenoMixMamba2Block(nn.Module):
         moe_enable=False,
         moe_cfg={},
         d_intermediate=0,           # whether MLP is used
+        bidirectional_cfg={},
         device=None,
         dtype=None,
     ):
@@ -170,12 +173,18 @@ class GenoMixMamba2Block(nn.Module):
         # get the ssm_cfg
         ssm_cfg = ssm_cfg if ssm_cfg is not None else {}
         attn_cfg = attn_cfg if attn_cfg is not None else {}
+        bidirectional_cfg = bidirectional_cfg if bidirectional_cfg is not None else {}
+        
+        bidirectional = bidirectional_cfg.get("bidirectional", False)
+        bidirectional_strategy = bidirectional_cfg.get("bidirectional_strategy", "add")
 
         # deinfe mixer layer
-        self.mixer = Mamba2(                # Mamba2 layer
+        self.mixer = GenoMixMamba2Extension(                # Mamba2 layer
             d_model,                        
             layer_idx=layer_idx, 
-            **ssm_cfg, 
+            bidirectional=bidirectional,
+            bidirectional_strategy=bidirectional_strategy,
+            ssm_cfg=ssm_cfg, 
             **factory_kwargs
         ) if not attn_enable else MHA(       # attention layer
             d_model,
@@ -198,13 +207,18 @@ class GenoMixMamba2Block(nn.Module):
         else:
             if mlp_attn_only and (not isinstance(self.mixer, MHA)):
                 self.mlp = None
-            # NOTE: In original code, the slef.norm = norm_cls, 
-            # and slef.norm2 = norm_cls as well. This may result in the same norm layer.
-            # ie., self.norm = self.norm2. 
-            # see
-            # https://github.com/state-spaces/mamba/blob/main/mamba_ssm/modules/block.py#L29-L33
-            # 
-            # But here, we create two different norm layers.
+            elif not mlp_attn_only:   # TODO: need to test this
+                self.norm2 = (nn.LayerNorm if not rms_norm else RMSNorm)(
+                    d_model,
+                    eps=norm_epsilon, 
+                    **factory_kwargs
+                )
+                self.mlp = GatedMLP(
+                    d_model,
+                    hidden_features=d_intermediate, 
+                    out_features=d_model, 
+                    **factory_kwargs
+                )
             else:
                 self.norm2 = (nn.LayerNorm if not rms_norm else RMSNorm)(
                     d_model,
