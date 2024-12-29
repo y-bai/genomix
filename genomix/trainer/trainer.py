@@ -68,37 +68,38 @@ class GenoMixCausalLMTrainer(Trainer):
         input_ids = inputs.pop('input_ids')
         labels = inputs.pop('labels')
 
-        if self.args.fp16:
-            with torch.autocast(self.args.device.type):
-                # outputs = model(**inputs)
-                outputs = model(input_ids=input_ids)
+        # if self.args.fp16:
+        #     with torch.autocast(self.args.device.type):
+        #         # outputs = model(**inputs)
+        #         outputs = model(input_ids=input_ids)
+        #         shift_logits = outputs["logits"][:, :-1, :].contiguous()
+        #         shift_labels = labels[:, 1:].contiguous()
+        #         loss = self.loss_fn(
+        #             shift_logits.view(-1, shift_logits.size(-1)), 
+        #             shift_labels.view(-1))
+        #         ## NOTE: The following code will introduce issue of 
+        #         ## "RuntimeError: view size is not compatible with input tensor's size and stride"
+        #         # shift_logits = outputs["logits"][:, :-1, :]
+        #         # shift_labels = labels[:, 1:]
+        #         # loss = self.loss_fn(
+        #         #     shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
+        #         #     shift_labels.view(-1).contiguous())
+        # else:
+        #     # outputs = model(**inputs)
+        #     outputs = model(input_ids=input_ids)
+        #     shift_logits = outputs["logits"][:, :-1, :].contiguous()
+        #     shift_labels = labels[:, 1:].contiguous()
+        #     loss = self.loss_fn(
+        #         shift_logits.view(-1, shift_logits.size(-1)), 
+        #         shift_labels.view(-1))
 
-                shift_logits = outputs["logits"][:, :-1, :].contiguous()
-                shift_labels = labels[:, 1:].contiguous()
+        outputs = model(input_ids=input_ids)
+        shift_logits = outputs["logits"][:, :-1, :].contiguous()
+        shift_labels = labels[:, 1:].contiguous()
 
-                loss = self.loss_fn(
-                    shift_logits.view(-1, shift_logits.size(-1)), 
-                    shift_labels.view(-1))
-
-                ## NOTE: The following code will introduce issue of 
-                ## "RuntimeError: view size is not compatible with input tensor's size and stride"
-                # shift_logits = outputs["logits"][:, :-1, :]
-                # shift_labels = labels[:, 1:]
-                # loss = self.loss_fn(
-                #     shift_logits.view(-1, shift_logits.size(-1)).contiguous(), 
-                #     shift_labels.view(-1).contiguous())
-        else:
-            # outputs = model(**inputs)
-            outputs = model(input_ids=input_ids)
-
-            shift_logits = outputs["logits"][:, :-1, :].contiguous()
-            shift_labels = labels[:, 1:].contiguous()
-
-            y = shift_logits.view(-1, shift_logits.size(-1))
-
-            loss = self.loss_fn(
-                shift_logits.view(-1, shift_logits.size(-1)), 
-                shift_labels.view(-1))
+        loss = self.loss_fn(
+            shift_logits.view(-1, shift_logits.size(-1)), 
+            shift_labels.view(-1))
         
         # torch.cuda.current_stream().synchronize()  
         # t_seq_emd_end = time.time()
