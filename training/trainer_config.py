@@ -120,8 +120,8 @@ class GenoMixCausalLMTrainingConfig(TrainingArguments):
     #
     disable_tqdm: bool = True
 
-    # tf32: bool = True
-    fp16: bool = True
+    tf32: bool = True
+    # fp16: bool = True         # fp16 may cause nan gradient norm
     # gradient_checkpointing: bool = True
 
     # for debug

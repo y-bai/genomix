@@ -28,6 +28,22 @@ import os
 import logging
 import math
 
+# import this FIRST, before anything from the pytorch or transformer libraries.
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
+#
+# Why appear the following warning?
+# ------------------------
+# huggingface/tokenizers: The current process just got forked, after parallelism has already been used. Disabling parallelism to avoid deadlocks...
+# To disable this warning, you can either:
+#   - Avoid using `tokenizers` before the fork if possible
+#   - Explicitly set the environment variable TOKENIZERS_PARALLELISM=(true | false)
+# ------------------------
+# Caused by fast tokenizer in streaming mode or DataCollatorForLanguageModeling
+# See: https://stackoverflow.com/questions/62691279/how-to-disable-tokenizers-parallelism-true-false-warning
+# and  https://github.com/huggingface/transformers/issues/5486#issuecomment-833768404
+# os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
@@ -57,7 +73,7 @@ from genomix.data_builder.datasets import (
 )
 from genomix.data_builder.data_collator import GenoMixDataCollatorForLanguageModeling
 
-from genomix.models.genomix_vallim2 import GenoMixMamba2Model, GenoMixMamba2ForCausalLM
+from genomix.models.genomix_modeling import GenoMixMamba2Model, GenoMixMamba2ForCausalLM
 from genomix.models.genomix_config import (
     GenoMixMamba2Config,
     GenoMixMamba2SSMConfig,
@@ -65,7 +81,8 @@ from genomix.models.genomix_config import (
     GenoMixMamba2MoEConfig,
     GenoMixMamba2DownUpSampleConfig,
     GenoMixInputEmbeddingConfig,
-    GenoMixMamba2InitializerConfig
+    GenoMixMamba2InitializerConfig,
+    GenoMixMamba2BiDirectionalConfig,
 )
 from genomix.trainer.trainer import GenoMixCausalLMTrainer
 
@@ -243,6 +260,10 @@ def main():
     down_up_cfg = GenoMixMamba2DownUpSampleConfig()
     input_emb_cfg = GenoMixInputEmbeddingConfig()
     initializer_cfg = GenoMixMamba2InitializerConfig()
+    bidirectional_cfg = GenoMixMamba2BiDirectionalConfig(
+        bidirectional=False,
+        bidirectional_strategy='add',
+    )
 
     # add attn layers 
     interval = 4
@@ -270,12 +291,14 @@ def main():
         down_up_sample_cfg=down_up_cfg.to_dict(),
 
         input_embedding_cfg=input_emb_cfg.to_dict(),
+        bidirectional_cfg=bidirectional_cfg.to_dict(),
+        
         ssm_cfg=ssm_cfg.to_dict(),
         attn_cfg=attn_cfg.to_dict(),
         moe_cfg=moe_cfg.to_dict(),
         initializer_cfg=initializer_cfg.to_dict(),
     )
-    logger.info(f"genomix_causallm_config: \n{genomix_causallm_config}")
+    logger.info(f"genomix_causallm_config: \n{genomix_causallm_config.to_json_string(use_diff=True)}")  
     ############################################################################
     # config model end
     ############################################################################
