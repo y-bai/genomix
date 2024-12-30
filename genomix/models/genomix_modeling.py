@@ -42,6 +42,7 @@ from .genomix_config import GenoMixMamba2Config
 from .genomix_block import GenoMixMamba2Block
 from .genomix_output import GenoMixModelOutput, GenoMixForCausalLMOutput
 from .genomix_embedding import GenoMixTabularEmbedding
+from .genomix_sampling import GenomixLongTermInitEnocder, GenomixLongTermLastDecoder
 
 logger = logging.getLogger(__name__)
 
@@ -234,6 +235,7 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         if use_tabular_embedding:
             config.tie_word_embeddings = False
         super().__init__(config)
+
         if use_tabular_embedding:
             fusion_type = input_embdding_cfg.get("fusion_type", "add")
             self.embeddings = GenoMixTabularEmbedding(
@@ -251,9 +253,6 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         if self.fused_add_norm:
             if layer_norm_fn is None or rms_norm_fn is None:
                 raise ImportError("Failed to import Triton LayerNorm / RMSNorm kernels")
-
-        # whether enable long term handling
-        self.enable_long_term = config.enable_long_term
             
         attn_layer_idx = config.attn_layer_idx if config.attn_layer_idx is not None else []
         moe_layer_idx = config.moe_layer_idx if config.moe_layer_idx is not None else []
@@ -262,6 +261,29 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
         attn_cfg = config.attn_cfg if config.attn_cfg is not None else {}
         moe_cfg = config.moe_cfg if config.moe_cfg is not None else {}
         bidirectional_cfg = config.bidirectional_cfg if config.bidirectional_cfg is not None else {}
+
+        # whether enable long term handling
+        long_term_cfg = config.long_term_cfg if config.long_term_cfg is not None else {}
+        self.long_term_enable = long_term_cfg.pop("enable_long_term", False)
+        if self.long_term_enable:
+            lt_init_encoder_d_intermediate = long_term_cfg.pop("lt_init_encoder_d_intermediate", 0)
+            self.long_term_init_encoder = GenomixLongTermInitEnocder(
+                config, 
+                layer_ide=0,
+                d_intermediate=lt_init_encoder_d_intermediate,
+                **factory_kwargs
+            )
+            self.long_term_last_decoder = GenomixLongTermLastDecoder(
+                config, **factory_kwargs)
+            
+            layers_idx_range = range(1, config.n_layers+1)
+            attn_layer_idx = [i+1 for i in attn_layer_idx]
+            moe_layer_idx = [i+1 for i in moe_layer_idx]
+            
+        else:
+            self.long_term_init_encoder = None
+            self.long_term_last_decoder = None
+            layers_idx_range = range(config.n_layers)
 
         self.layers = nn.ModuleList(
             [
@@ -282,7 +304,7 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
                     d_intermediate=config.d_intermediate,         
                     **factory_kwargs,
                 )
-                for i in range(config.n_layers)
+                for i in layers_idx_range
             ]
         )
 
@@ -317,8 +339,32 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
     def forward(self, input_ids, inference_params=None, **mixer_kwargs):
 
         hidden_states = self.embeddings(input_ids)
-
         residual = None
+
+        if self.long_term_enable:
+            hidden_states, init_hidden_states = self.long_term_init_encoder(
+                hidden_states, residual=residual, inference_params=inference_params, **mixer_kwargs
+            )
+
+        hidden_states, residual = self._forward_block(
+            hidden_states, 
+            residual=residual, 
+            inference_params=inference_params, 
+            **mixer_kwargs
+        )
+        if self.long_term_enable:
+            hidden_states = self.long_term_last_decoder(init_hidden_states, hidden_states)
+
+        return GenoMixModelOutput(last_hidden_state=hidden_states)
+    
+    def _forward_block(
+        self,
+        hidden_states,
+        residual=None,
+        inference_params=None, 
+        **mixer_kwargs
+    ):
+        
         for layer in self.layers:
             hidden_states, residual = layer(
                 hidden_states, residual, inference_params=inference_params, **mixer_kwargs
@@ -338,10 +384,8 @@ class GenoMixMamba2Model(GenoMixMamba2PreTrainedModel):
                 residual_in_fp32=self.residual_in_fp32,
                 is_rms_norm=isinstance(self.norm_f, RMSNorm)
             )
-
-        return GenoMixModelOutput(last_hidden_state=hidden_states)
-
-
+        return hidden_states, residual
+        
 
 class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
     _tied_weights_keys = []
@@ -374,6 +418,18 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
 
         # Initialize weights and apply final processing
         self.post_init()
+    
+    def get_output_embeddings(self):
+        return self.lm_head
+
+    def set_output_embeddings(self, new_embeddings):
+        self.lm_head = new_embeddings
+
+    def get_input_embeddings(self):
+        return self.backbone.get_input_embeddings()
+
+    def set_input_embeddings(self, new_embeddings):
+        return self.backbone.set_input_embeddings(new_embeddings)
 
     def allocate_inference_cache(self, batch_size, max_seqlen, dtype=None, **kwargs):
         return self.backbone.allocate_inference_cache(batch_size, max_seqlen, dtype=dtype, **kwargs)
@@ -399,5 +455,3 @@ class GenoMixMamba2ForCausalLM(GenoMixMamba2PreTrainedModel, GenerationMixin):
             logits=logits,
             last_hidden_state=model_output.last_hidden_state,
         )
-
-
