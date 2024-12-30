@@ -20,4 +20,4 @@ MASTER_IP=`head -n 1 ${NODEFILE}`
 echo $MASTER_IP
 rm $NODEFILE
 
-python 00_write_txt_test.py
+python 06_char_tokenizer_test.py
