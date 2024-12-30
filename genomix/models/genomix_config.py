@@ -49,7 +49,7 @@ class GenoMixMamba2SSMConfig(_GenoMixMamba2BaseConfig):
     d_state: int = 64          # SSM state expansion factor, (`N` in [1] Algorithm 2), typically 64 or 128 
     headdim: int = 32          # must d_model/headdim%8==0, default 64 in mamba2，should be small
 
-    d_conv: int = 4            # default 4 in mamba2, no need to change
+    d_conv: int = 4            # default 4 in mamba2, kernel size of conv1d in SSM, no need to change
 
     # init for conv layer, no need to change
     # nn.init.uniform_(self.conv1d.weight, -self.conv_init, self.conv_init)
@@ -101,8 +101,13 @@ class GenoMixMamba2MoEConfig(_GenoMixMamba2BaseConfig):
 
 
 @dataclass
-class GenoMixMamba2DownUpSampleConfig(_GenoMixMamba2BaseConfig):
-    pass
+class GenoMixMamba2LongTermConfig(_GenoMixMamba2BaseConfig):
+    enable_long_term: bool = True
+    lt_conv_sampling_rate: int = 64                     # sampling rate in conv1d, also is kernel_size and stride
+    lt_conv_groups: int = 1                             # groups of the conv1d, 1 or d_model
+    lt_conv_bias: bool = True                           # default True, no need to change
+    lt_conv_dilation: int = 1                           # default 1, no need to change
+    lt_init_encoder_d_intermediate: int = 0             # default 0,
 
 
 @dataclass
@@ -121,6 +126,7 @@ class GenoMixInputEmbeddingConfig(_GenoMixMamba2BaseConfig):
 class GenoMixMamba2InitializerConfig(_GenoMixMamba2BaseConfig):
     initializer_range: float = 0.1
     rescale_prenorm_residual: bool = True
+
 
 @dataclass
 class GenoMixMamba2Config(PretrainedConfig):
@@ -155,6 +161,16 @@ class GenoMixMamba2Config(PretrainedConfig):
         bidirectional_cfg={
             "bidirectional": False,
             "bidirectional_strategy": "add", # "concat", "add" or "ewmul"
+        },
+
+        long_term_cfg={
+            "enable_long_term": False,
+            "lt_conv_sampling_rate": 64,                        # sampling rate in conv1d, also is kernel_size and stride
+            "lt_conv_groups": 1,                                # groups of the conv1d, 1 or d_model
+            "lt_init_encoder_d_intermediate": 0,                # default 0,
+            "lt_conv_bias": True,                               # default True, no need to change
+            "lt_conv_dilation": 1,                              # default 1, no need to change
+
         },
 
         # Mamba2 block config
@@ -281,6 +297,17 @@ class GenoMixMamba2Config(PretrainedConfig):
                 "bidirectional": False,
                 "bidirectional_strategy": "add", # "concat", "add" or "ewmul"
             }
+        
+        long_term_cfg : dict, optional
+            by default
+            {
+                "enable_long_term": False,              # default False
+                "lt_conv_sampling_rate": 64,            # sampling rate in conv1d, also is kernel_size and stride
+                "lt_conv_groups": 1,                    # groups of the conv1d, 1 or d_model
+                "lt_init_encoder_d_intermediate": 0,
+                "lt_conv_bias": True,                   # default True, no need to change
+                "lt_conv_dilation": 1,                  # default 1, no need to change
+            }
 
         ssm_cfg : dict, optional
             the parameters for Mamba2 layer, by default
@@ -373,6 +400,7 @@ class GenoMixMamba2Config(PretrainedConfig):
         self.down_up_sample_cfg = down_up_sample_cfg
 
         self.bidirectional_cfg = bidirectional_cfg
+        self.long_term_cfg = long_term_cfg
     
         self.ssm_cfg = ssm_cfg
         self.attn_cfg = attn_cfg
